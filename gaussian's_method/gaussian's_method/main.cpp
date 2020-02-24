@@ -1,10 +1,9 @@
-
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <cassert>
 #include <vector>
-
+#include <tuple>
 
 
 struct matf
@@ -61,20 +60,33 @@ matf input()
 {
 	float plug;
 	size_t columns = 0;
+	size_t rows = 0;
 
+	std::cout << "rows >> ";
 	std::string line;
 	std::getline(std::cin, line);
 	std::stringstream stream(line);
+
+	// rows
+	stream >> rows;
+	std::cout << "write a coefficient matrix below\n";
+
+	// columns
+	std::getline(std::cin, line);
+	stream.str(line);
+	stream.seekg(0);
+
 	while (!stream.eof())
 	{
 		stream >> plug;
 		columns++;
 	}
 
-	matf mat(columns - 1, columns);
+	// data input
+	matf mat(rows, columns);
 	stream.seekg(0);
 
-	for (int y = 0; y < columns - 1; y++)
+	for (int y = 0; y < rows; y++)
 	{
 		if (y != 0)
 		{
@@ -96,11 +108,15 @@ matf input()
 }
 
 
-std::vector<float> gausian_method(matf mat)
-{
-	std::vector<float> res(mat.row);
+// flag != 0 if system have at least one solution, otherwise 0
 
-	for (int column = 0, row = 0; column < mat.column && row < mat.row; column++)
+std::tuple<int, std::vector<float>> gausian_method(matf mat)
+{
+	int columns = mat.column - 1;
+	std::vector<float> res(columns);
+	std::vector<int> where(columns, -1);
+
+	for (int column = 0, row = 0; column < columns && row < mat.row; column++)
 	{
 		int pivot = row;
 		for (int i = row; i < mat.row; i++)
@@ -110,12 +126,14 @@ std::vector<float> gausian_method(matf mat)
 
 		for (int i = 0; i < mat.column; i++)
 			std::swap(mat[pivot][i], mat[row][i]);
+		
+		where[column] = row;
 
 		for (int i = 0; i < mat.row; i++)
 		{
 			if (i != row)
 			{
-				float c = mat[i][column] / mat[row][column];
+				double c = mat[i][column] / mat[row][column];
 				for (int j = column; j <= mat.row; j++)
 					mat[i][j] -= mat[row][j] * c;
 			}
@@ -123,28 +141,90 @@ std::vector<float> gausian_method(matf mat)
 		row++;
 	}
 
-	for (int i = 0; i < mat.row; i++)
-		res[i] = mat[i][mat.column-1] / mat[i][i];
+	int flag = 1;
 
-	return res;
+	for (int i = 0; i < columns; ++i)
+		if (where[i] != -1)
+			res[i] = mat[where[i]][columns] / mat[where[i]][i];
+
+	for (int i = 0; i < mat.row; ++i)
+	{
+		float sum = 0;
+		for (int j = 0; j < columns; ++j)
+			sum += res[j] * mat[i][j];
+		
+		if (abs(sum - mat[i][columns]) > 0.0001f)
+		{
+			flag = 0;
+			break;
+		}
+	}
+
+	if (flag)
+		for (int i = 0; i < columns; ++i)
+			if (where[i] == -1)
+				flag = -1;
+
+	return {flag, res};
 }
 
 
 int main(void)
 {
-	std::cout << "write a coefficient matrix below\n";
 	
 	matf mat; 
 	while (mat = input(), !mat.mat)
 		std::cout << "invalid input, try agen\n";
 
-	std::vector<float> res = gausian_method(mat);
+	auto [flag, res] = gausian_method(mat);
 
+	const char* types[3] = { "inf", "non", "yes" };
+	std::cout << "\nsolution: " << types[flag + 1] << '\n';
+
+	for (int i = 0; i < res.size(); i++)
+		std::cout << 'a' << i << '=' << res[i] << ' ';
+
+	std::cout << '\n';
 	return 0;
 }
 
 /*
+have solution
+
+3
 5 1 1 10
 6 3 5 27
 1 1 6 21
+
+*/
+
+/*
+have no solution
+
+4
+5 1 1 10
+6 3 5 27
+1 3 6 15
+5 1 6 31
+
+*/
+
+/*
+have no solution
+
+3
+5 1 1 10
+10 2 2 27
+1 1 6 21
+
+*/
+
+/*
+have inf solutions
+
+3
+5 1 1 10
+10 2 2 20
+1 1 6 21
+
 */
