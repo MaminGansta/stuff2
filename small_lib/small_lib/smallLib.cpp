@@ -1,6 +1,7 @@
-#include <cstdlib>
 #include <cassert>
 #include <memory.h>
+#include <utility>
+#include <malloc.h>
 
 #ifndef MAX
 #define MAX(a,b) (a > b? a : b)
@@ -16,6 +17,14 @@ namespace small
 		size_t size;
 
 		array() : size(0) {}
+		array(const std::initializer_list<T>& args)
+		{
+			assert(args.size() <= capacity);
+			int i = 0;
+			size = args.size();
+			for (size_t i = 0; i < size; i++)
+				data[i] = *(args.begin() + i);
+		}
 
 		T& operator [] (int idx)
 		{
@@ -23,7 +32,7 @@ namespace small
 			return data[idx];
 		}
 
-		void push_back(const T&& elem)
+		void push_back(T const && elem)
 		{
 			assert(size <= capacity);
 			data[size++] = elem;
@@ -35,39 +44,82 @@ namespace small
 		}
 	};
 
+
+	template <typename T>
+	struct smallvector
+	{
+		T* data;
+		size_t size;
+
+		smallvector(size_t size, T value) : size(size)
+		{
+			assert(sizeof(T) * size < 1024);
+			data = (T*)_malloca(sizeof(T) * size);
+			for (size_t i = 0; i < size; i++)
+				new(data + i) T(value);
+		}
+
+		~smallvector()
+		{
+			for (size_t i = 0; i < size; i++)
+				data[i].~T();
+		}
+
+	};
+
+
 	template <typename T>
 	struct vector
 	{
-		T* data;
-		size_t capacity;
-		size_t size;
+		T* data = nullptr;
+		size_t capacity = 0;
+		size_t size = 0;
 
-		vector() : data(nullptr), size(0), capacity(0) {}
-		vector(int capacity) : data(nullptr), size(0), capacity(capacity)
+		vector() = default;
+		vector(size_t capacity)
 		{
-
+			reserve(capacity);
+			this->capacity = capacity;
 		}
 
-		vector(size_t size, T const& value = T{}) : data(nullptr), capacity(size)
+		vector(size_t size, const T& value)
 		{
-			grow(capacity);
-			for (int i = 0; i < size; i++)
+			reserve(size);
+			capacity = size;
+			for (size_t i = 0; i < size; i++)
 				push_back(value);
+		}
+
+		vector(const std::initializer_list<T>& args)
+		{
+			reserve(args.size());
+			size = capacity = args.size();
+			for (int i = 0; i < size; i++)
+				new(data + i) T(*(args.begin() + i));
 		}
 
 		~vector()
 		{
-			for (int i = 0; i < size; i++)
+			for (size_t i = 0; i < size; i++)
 				data[i].~T();
 			::operator delete(data);
 		}
 
-		void push_back(const T && value)
+		void push_back(const T& value)
 		{
 			size_t new__size = size + 1;
 			if (new__size > capacity) 
 				grow(new__size);
 			new(data + size) T(value);
+			size = new__size;
+		}
+
+		void move_back(T& value)
+		{
+			size_t new__size = size + 1;
+			if (new__size > capacity)
+				grow(new__size);
+			new(data + size) T(std::move(value));
 			size = new__size;
 		}
 
@@ -77,16 +129,35 @@ namespace small
 			return data[i];
 		}
 
-		void erise(int i)
+		void remove(int i)
 		{
 			assert((unsigned)i < size);
-			data[i].~T();
+			using std::swap;
+			swap(data[i], data[--size]);
+			data[size].~T();
+		}
+
+		void erase(int i)
+		{
+			assert((unsigned)i < size);
+			data[size].~T();
 			memmove(data + i, data + i + 1, sizeof(T) * (size - i));
+			size--;
 		}
 
 		void reserve(size_t reserve_size)
 		{
-			reserve_mem(reserve_size);
+			if (reserve_size <= capacity) return;
+			
+			T* new_buffer = (T*)::operator new(reserve_size * sizeof(T));
+			
+			assert(data == nullptr && size == 0);
+			memmove(new_buffer, data, sizeof(T) * size);
+			::operator delete(data);
+
+			data = new_buffer;
+			assert(data);
+			capacity = reserve_size;
 		}
 
 		T* begin() { return data; }
@@ -98,24 +169,17 @@ namespace small
 		{
 			new_cap = MAX(2 * capacity + 1, new_cap);
 			assert(new_cap > capacity);
-			T* new_buffer = static_cast<T*>(::operator new(new_cap * sizeof(T)));
-
-			// this shit must be tested
-			//if (data)
-			//{
-				assert(data == nullptr && size != 0);
-				memmove(new_buffer, data, sizeof(T) * size);
-				::operator delete(data);
-			//}
+			
+			T* new_buffer = (T*)::operator new(new_cap * sizeof(T));
+			assert(data != nullptr && size != 0);
+			memmove(new_buffer, data, sizeof(T) * size);
+			::operator delete(data);
+			
 			data = new_buffer;
 			assert(data);
 			capacity = new_cap;
 		}
 
-		void reserve_mem(size_t new_cap)
-		{
-
-		}
 	};
 
 
