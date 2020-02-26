@@ -45,15 +45,15 @@ namespace small
 	};
 
 
+	// use structures less then 1024 B and it will be allocated on the stack
 	template <typename T>
 	struct smallvector
 	{
 		T* data;
 		size_t size;
 
-		smallvector(size_t size, T value) : size(size)
+		smallvector(size_t size, T const& value = T{}) : size(size)
 		{
-			assert(sizeof(T) * size < 1024);
 			data = (T*)_malloca(sizeof(T) * size);
 			for (size_t i = 0; i < size; i++)
 				new(data + i) T(value);
@@ -63,6 +63,7 @@ namespace small
 		{
 			for (size_t i = 0; i < size; i++)
 				data[i].~T();
+			_freea(data);
 		}
 
 	};

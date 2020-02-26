@@ -44,7 +44,7 @@ int main(void)
 
 	using namespace small;
 
-	smallvector<mystruct> a(3, mystruct());
+	smallvector<mystruct> a(3);
 
 	//vector<mystruct> b(3, mystruct());
 
