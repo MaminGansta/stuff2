@@ -7,8 +7,8 @@
 #include <array>
 #include <random>
 #include <cstdlib>
+#include <iostream>
 #include <functional>
-
 
 std::random_device rd;  //Will be used to obtain a seed for the random number engine
 std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
@@ -28,21 +28,44 @@ struct mybread
 		char chromo[3];
 	};
 
+	bool operator !=(mybread other)
+	{
+		return (whole != other.whole);
+	}
+
 	mybread crossover(mybread other)
 	{
-		//int breakpoint = rand() % (sizeof(char) * 3 * 8);
 		std::uniform_int_distribution<> dis(0, sizeof(char) * 3 * 8);
 
-		int breakpoint = dis(gen);
-		int right = (sizeof(char) * 3 * 8) - breakpoint;
+		int breakpoint = dis(gen) + 8;
+		int right = (sizeof(char) * 4 * 8) - breakpoint;
 
-		return { whole << breakpoint | other.whole >> right };
-	}
+
+		//std::cout << "breakpoint: " << breakpoint << '\n';
+		//for (int i = 0; i < 3; i++)
+		//	std::cout << (int)chromo[i] << ' ';
+		//std::cout << '\n';
+		//for (int i = 0; i < 3; i++)
+		//	std::cout << (int)other.chromo[i] << ' ';
+		//std::cout << '\n';
+
+		mybread child = { (whole << breakpoint >> breakpoint) | (other.whole >> right << right) };
+
+		if (rand() % 100 < 50)
+			child.whole = child.whole ^ 1 << (rand() % 24);
+
+		return child;
+	} 
 
 	static float fitnes(mybread unit)
 	{
 		float temp = 1.0f / (abs(15 - (unit.chromo[0] + 2*unit.chromo[1] + 5*unit.chromo[3])) + 1);
 		return temp;
+	}
+
+	static bool check_res(mybread test)
+	{
+		return (test.chromo[0] + 2 * test.chromo[1] + 5 * test.chromo[2] == 15);
 	}
 };
 
@@ -76,7 +99,7 @@ population<bread, size> evolution(population<bread, size> parents,
 	while (count != size)
 	{
 		for (int i = 0; i < size; i++)
-			if (propobility[i] > dis(gen) && nPartners < 2)
+			if (propobility[i] > dis(gen) && nPartners < 2 && partners[0] != parents[i])
 				partners[nPartners++] = parents[i];
 
 		if (nPartners == 2)
@@ -86,7 +109,15 @@ population<bread, size> evolution(population<bread, size> parents,
 		}
 	}
 
-	// mutation can be here
+	//std::cout << "generation\n";
+	//for (int i = 0; i < size; i++)
+	//{
+	//	for (int j = 0; j < 3; j++)
+	//		std::cout << (int)children[i].chromo[j] << ' ';
+	//
+	//	std::cout << '\n';
+	//}
+
 	return children;
 }
 
@@ -98,13 +129,35 @@ population<bread, size> gen_alg(population<bread, size> start)
 	population<bread, size> step = start;
 	float fitnes_res[size];
 	float fitnes_sum = 0;
+	bool ans = false;
 
-	while (time < 100)
+	while (time < 300 && !ans)
 	{
+
+
+		//std::cout << "fitnes\n";
+		//for (int i = 0; i < size; i++)
+		//	std::cout << fitnes_res[i] << ' ';
+		//std::cout << '\n';
+		//
+		std::cout << "step " << time << "==================" << '\n';
+
 		// calculate fitnes
 		for (int i = 0; i < size; i++)
 		{
 			fitnes_res[i] = bread::fitnes(step[i]);
+			//if (1.0f - fitnes_res[i] < 0.01f)
+			//	ans = true;
+
+			if (bread::check_res(step[i]))
+			{
+				std::cout << ' ' << i << '\n';
+				for (int j = 0; j < 3; j++)
+					std::cout << (int)step[i].chromo[j] << ' ';
+				std::cout << '\n';
+				ans = true;
+			}
+
 			fitnes_sum += fitnes_res[i];
 		}
 
@@ -112,6 +165,13 @@ population<bread, size> gen_alg(population<bread, size> start)
 		step = evolution<bread, size>(step, fitnes_res, fitnes_sum);
 		time++;
 	}
+
+	// for last population
+	std::cout << "fitnes\n";
+	for (int i = 0; i < size; i++)
+		std::cout << fitnes_res[i] << ' ';
+	std::cout << '\n';
+
 
 	return step;
 }
@@ -125,6 +185,19 @@ int main(void)
 		for (int j = 0; j < 3; j++)
 			start.units[i].chromo[j] = rand();
 
+	/*mybread a, b;
+	for (int i = 0; i < 3; i++)
+	{
+		a.chromo[i] = i + 1;
+		b.chromo[i] = i + 4;
+	}
+
+	b.whole = (b.whole << 24) >> 24;*/
+
+
+
 	auto res = gen_alg(start);
+
+
 	return 0;
 }
