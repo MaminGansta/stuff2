@@ -19,6 +19,7 @@ namespace small
 	{
 		char c_data[capacity * sizeof(T)];
 		T* data = (T*)c_data;
+		size_t cap = capacity;
 		size_t size = 0;
 
 		array() = default;

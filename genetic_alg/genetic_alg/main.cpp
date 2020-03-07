@@ -43,9 +43,9 @@ struct mybread
 
 		mybread child = { (pair.second.whole << breakpoint >> breakpoint) | (pair.second.whole >> right << right) };
 		// mutaion
-		for (int i = 0; i < 24; i++)
-			if (rand() % 100 < 40)
-				child.whole = child.whole ^ 1 << 31 - i;
+		for (int i = 0; i < 32; i++)
+			if (rand() % 100 < 20)
+				child.whole = child.whole ^ 1 << i;
 
 		return child;
 	}
@@ -187,7 +187,8 @@ int main(void)
 	std::uniform_int_distribution<unsigned int> roll(1 << 20, 1 << 31);
 
 	small::array<mybread, 5> start;
-	for (int i = 0; i < 5; i++)
+
+	for (int i = 0; i < start.cap; i++)
 	{
 		unsigned int temp = rand();
 		start.push_back(mybread{ roll(gen) });
