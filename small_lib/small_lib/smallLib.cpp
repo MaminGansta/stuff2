@@ -17,17 +17,42 @@ namespace small
 	template <typename T, size_t capacity>
 	struct array
 	{
-		T data[capacity];
-		size_t size;
+		char c_data[capacity * sizeof(T)];
+		T* data = (T*)c_data;
+		size_t size = 0;
 
-		array() : size(0) {}
+		array() = default;
+		array(size_t to_fill, const T& val = T{})
+		{
+			assert(to_fill <= capacity);
+			for (int i = 0; i < to_fill; i++)
+				push_back(val);
+		}
 		array(const std::initializer_list<T>& args)
 		{
-			//assert(args.size() <= capacity);
 			int i = 0;
 			size = args.size();
+			for (size_t i = 0; i < args.size(); i++)
+				push_back(*(args.begin() + i));
+		}
+		array(array<T, capacity> const& other)
+		{
+			for (int i = 0; i < other.size; i++)
+				push_back(other.data[i]);
+		}
+		array(array<T, capacity>&& other)
+		{
+			{
+				size = other.size;
+				other.size = 0;
+				for (int i = 0; i < size; i++)
+					data[i] = std::move(other.data[i]);
+			}
+		}
+		~array()
+		{
 			for (size_t i = 0; i < size; i++)
-				data[i] = *(args.begin() + i);
+				data[i].~T();
 		}
 
 		T& operator [] (int idx)
@@ -36,16 +61,37 @@ namespace small
 			return data[idx];
 		}
 
-		void push_back(T const && elem)
+		void push_back(const T& value)
 		{
 			assert(size < capacity);
-			data[size++] = elem;
+			new(data + size++) T(value);
+		}
+
+		void remove(int i)
+		{
+			assert((unsigned)i < size);
+			using std::swap;
+			swap(data[i], data[--size]);
+			data[size].~T();
+		}
+
+		void erase(int i)
+		{
+			assert((unsigned)i < size);
+			data[size].~T();
+			memmove(data + i, data + i + 1, sizeof(T) * (size - i));
+			size--;
 		}
 
 		T& pop()
 		{
 			return data[--size];
 		}
+
+		T& front() { return data[0]; }
+		T& back() { return data[size - 1]; }
+		T* begin() { return data; }
+		T* end() { return data + size; }
 	};
 
 
@@ -56,7 +102,7 @@ namespace small
 		T* data;
 		size_t size;
 
-		svector(size_t size, T const& value = T{}) : size(size)
+		svector(size_t size, const T& value = T{}) : size(size)
 		{
 			data = (T*)_malloca(sizeof(T) * size);
 			for (size_t i = 0; i < size; i++)
@@ -95,7 +141,7 @@ namespace small
 				push_back(value);
 		}
 
-		vector(const std::initializer_list<T>& args)
+		vector(std::initializer_list<T> const& args)
 		{
 			reserve(args.size());
 			size = capacity = args.size();

@@ -16,25 +16,31 @@ struct mystruct
 	int* p;
 
 	mystruct() { p = new int(5); a = 1; std::cout << "cosntr\n"; }
-	
 	mystruct(const mystruct& m)
 	{
 		a = m.a;
 		p = new int(3);
 		std::cout << "copy\n";
 	}
-
-	mystruct& operator =(mystruct& m)
+	mystruct& operator =(const mystruct& m)
 	{
+		p = new int(*m.p);
 		std::cout << "copy oper\n";
 		return *this;
 	}
-	
 	mystruct(mystruct&& m)
 	{
 		p = m.p;
 		m.p = nullptr;
 		std::cout << "moved\n";
+	}
+	mystruct& operator= (mystruct&& m)
+	{
+		p = m.p;
+		m.p = nullptr;
+		a = m.a;
+		std::cout << "moved\n";
+		return *this;
 	}
 
 	~mystruct()
@@ -43,40 +49,22 @@ struct mystruct
 	}
 };
 
+
 int main(void)
 {
 	
-
 	using namespace small;
+	// array
+	array<mystruct, 100> a(10);
+	auto b = a;
+	auto c = std::move(a);
+
+	c.remove(1);
+
+	for (int i = 0; i < b.size; i++)
+		a.push_back(b.front());
 
 
-	array<int, 3> a;
-
-	a.push_back(1);
-	a.push_back(1);
-	a.push_back(1);
-	a.push_back(1);
-
-
-
-
-	hashmap<int, int, 2> map;
-	map[1] = 2;
-
-
-	hashmap<std::string, int, 2> mapp;
-
-	mapp["dsf"] = 3;
-	mapp["dsf"] = 3;
-	mapp["fdsf"] = 21;
-	mapp["dsdfsf"] = 1;
-	mapp["dsasdff"] = 31;
-
-	mapp.add("dsf", 3);
-
-	mapp.has("dsf");
-	mapp.remove("dsf");
-	mapp.has("dsf");
 
 
 
