@@ -49,6 +49,17 @@ int main(void)
 
 	using namespace small;
 
+
+	array<int, 3> a;
+
+	a.push_back(1);
+	a.push_back(1);
+	a.push_back(1);
+	a.push_back(1);
+
+
+
+
 	hashmap<int, int, 2> map;
 	map[1] = 2;
 

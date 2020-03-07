@@ -10,8 +10,10 @@
 #include <iostream>
 #include <functional>
 
-std::random_device rd;  //Will be used to obtain a seed for the random number engine
-std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+#include "smallLib.cpp"
+
+std::random_device rd;
+std::mt19937 gen(rd());
 
 // gray code lookup
 unsigned char togray[16] = { 0b0000, 0b0001, 0b0011 ,0b0010,0b0110 ,0b0111 ,0b0101,
@@ -25,7 +27,7 @@ struct mybread
 	union
 	{
 		unsigned int whole;
-		char chromo[3];
+		char chromo[4];
 	};
 
 	bool operator !=(mybread other)
@@ -33,7 +35,9 @@ struct mybread
 		return (whole != other.whole);
 	}
 
-	mybread crossover(mybread other)
+
+
+	static mybread crossover(std::pair<mybread, mybread> pair)
 	{
 		std::uniform_int_distribution<> dis(0, sizeof(char) * 3 * 8);
 
@@ -49,13 +53,13 @@ struct mybread
 		//	std::cout << (int)other.chromo[i] << ' ';
 		//std::cout << '\n';
 
-		mybread child = { (whole << breakpoint >> breakpoint) | (other.whole >> right << right) };
+		mybread child = { (pair.second.whole << breakpoint >> breakpoint) | (pair.second.whole >> right << right) };
 
 		if (rand() % 100 < 50)
-			child.whole = child.whole ^ 1 << (rand() % 24);
+			child.whole = child.whole ^ 1 << (rand() % 24 + 8);
 
 		return child;
-	} 
+	}
 
 	static float fitnes(mybread unit)
 	{
@@ -69,86 +73,102 @@ struct mybread
 	}
 };
 
-template <typename bread, size_t size>
-struct population
-{
-	union {
-		bread units[size];
-		char raw[];
-	};
 
-	bread& operator[] (int i) { return units[i]; }
-};
 
+// create new generaion
 
 template <typename bread, size_t size>
-population<bread, size> evolution(population<bread, size> parents, 
-							  float fitnes_res[size],
-							  float fitnes_sum)
+small::array<bread, size> evolution(small::array<bread, size> priv_generation)
 {
-	float propobility[size];
+	// calculate fitnes
+	float fitnes_value[size];
+	float fitnes_total = 0;
+	float fitnes_avg = 0;
+
 	for (int i = 0; i < size; i++)
-		propobility[i] = float(fitnes_res[i]) / fitnes_sum;
-
-	int count = 0;
-	population<bread, size> children;
-	
-	int nPartners = 0;
-	bread partners[2];
-	std::uniform_real_distribution<> dis(0.0f, fitnes_sum);
-	while (count != size)
 	{
-		for (int i = 0; i < size; i++)
-			if (propobility[i] > dis(gen) && nPartners < 2 && partners[0] != parents[i])
-				partners[nPartners++] = parents[i];
+		fitnes_value[i] = bread::fitnes(priv_generation[i]);
+		fitnes_total += fitnes_value[i];
+	}
 
-		if (nPartners == 2)
+	fitnes_avg = fitnes_total / size;
+	float fitnes_coef[size];
+	// coef of parent validity
+	for (int i = 0; i < size; i++)
+		fitnes_coef[i] = fitnes_value[i] / fitnes_avg;
+
+	// choose parents for new generation
+	small::array<bread, size> parents;
+	for (int i = 0; i < size; i++)
+	{
+		while (fitnes_coef[i] > 1.0f && parents.size < size)
 		{
-			nPartners = 0;
-			children[count++] = partners[0].crossover(partners[1]);
+			fitnes_coef[i]--;
+			parents.push_back(priv_generation[i]);
 		}
 	}
 
-	//std::cout << "generation\n";
-	//for (int i = 0; i < size; i++)
-	//{
-	//	for (int j = 0; j < 3; j++)
-	//		std::cout << (int)children[i].chromo[j] << ' ';
-	//
-	//	std::cout << '\n';
-	//}
+	if (parents.size < size)
+	{
+		while (parents.size < size)
+		{
+			std::uniform_real_distribution<> dis(0.0f, fitnes_total);
+			for (int i = 0; i < size; i++)
+			{
+				if (parents.size == size) break;
+				if (fitnes_coef[i] > dis(gen))
+					parents.push_back(priv_generation[i]);
+			}
+		}
+	}
+
+	// make pairs ramdomly to cross them and get children
+	small::array<bread, size> children;
+	for (int i = 0; i < size; i++)
+	{
+		int first = rand() % 5;
+		int second = rand() % 5;
+		if (first == second) second = (second + 3) % 5;
+		children.push_back(bread::crossover(std::make_pair(parents[first], parents[second])));
+	}
+
+	for (int i = 0; i < size; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			std::cout << (int)priv_generation[i].chromo[j] << ' ';
+		}
+		std::cout << "  " << fitnes_value[i] << '\n';
+	}
 
 	return children;
 }
 
 
+
+// core
+
 template <typename bread, size_t size>
-population<bread, size> gen_alg(population<bread, size> start)
+small::array<bread, size> gen_alg(small::array<bread, size> start)
 {
 	int time = 0;
-	population<bread, size> step = start;
-	float fitnes_res[size];
-	float fitnes_sum = 0;
+	small::array<bread, size> step = start;
 	bool ans = false;
 
-	while (time < 300 && !ans)
+	while (time < 100 && !ans)
 	{
 
+		
+		std::cout << "step " << time << "================" << '\n';
 
-		//std::cout << "fitnes\n";
-		//for (int i = 0; i < size; i++)
-		//	std::cout << fitnes_res[i] << ' ';
-		//std::cout << '\n';
-		//
-		std::cout << "step " << time << "==================" << '\n';
+		
+		// make new population
+		step = evolution<bread, size>(step);
+		time++;
 
-		// calculate fitnes
+		// check if we have solution
 		for (int i = 0; i < size; i++)
 		{
-			fitnes_res[i] = bread::fitnes(step[i]);
-			//if (1.0f - fitnes_res[i] < 0.01f)
-			//	ans = true;
-
 			if (bread::check_res(step[i]))
 			{
 				std::cout << ' ' << i << '\n';
@@ -157,21 +177,8 @@ population<bread, size> gen_alg(population<bread, size> start)
 				std::cout << '\n';
 				ans = true;
 			}
-
-			fitnes_sum += fitnes_res[i];
 		}
-
-		// make new population
-		step = evolution<bread, size>(step, fitnes_res, fitnes_sum);
-		time++;
 	}
-
-	// for last population
-	std::cout << "fitnes\n";
-	for (int i = 0; i < size; i++)
-		std::cout << fitnes_res[i] << ' ';
-	std::cout << '\n';
-
 
 	return step;
 }
@@ -180,24 +187,15 @@ population<bread, size> gen_alg(population<bread, size> start)
 int main(void)
 {
 	srand(time(0));
-	population<mybread, 5> start;
-	for (int i = 0; i < 5; i++)
-		for (int j = 0; j < 3; j++)
-			start.units[i].chromo[j] = rand();
+	std::uniform_int_distribution<unsigned int> roll(1 << 20, 1 << 31);
 
-	/*mybread a, b;
-	for (int i = 0; i < 3; i++)
+	small::array<mybread, 5> start;
+	for (int i = 0; i < 5; i++)
 	{
-		a.chromo[i] = i + 1;
-		b.chromo[i] = i + 4;
+		unsigned int temp = rand();
+		start.push_back(mybread{ roll(gen) });
 	}
 
-	b.whole = (b.whole << 24) >> 24;*/
-
-
-
 	auto res = gen_alg(start);
-
-
 	return 0;
 }

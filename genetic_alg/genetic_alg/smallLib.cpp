@@ -21,6 +21,13 @@ namespace small
 		size_t size;
 
 		array() : size(0) {}
+		//array(array<T, capacity>&& ohter) = delete;
+		array(const T& val)
+		{
+			size = capacity;
+			for (int i = 0; i < size; i++)
+				data[i] = val;
+		}
 		array(const std::initializer_list<T>& args)
 		{
 			//assert(args.size() <= capacity);
@@ -29,6 +36,12 @@ namespace small
 			for (size_t i = 0; i < size; i++)
 				data[i] = *(args.begin() + i);
 		}
+		array(array<T, capacity> const& other)
+		{
+			size = other.size;
+			for (int i = 0; i < size; i++)
+				data[i] = other.data[i];
+		}
 
 		T& operator [] (int idx)
 		{
@@ -36,7 +49,7 @@ namespace small
 			return data[idx];
 		}
 
-		void push_back(T const && elem)
+		void push_back(const T& elem)
 		{
 			assert(size < capacity);
 			data[size++] = elem;
@@ -56,7 +69,7 @@ namespace small
 		T* data;
 		size_t size;
 
-		svector(size_t size, T const& value = T{}) : size(size)
+		svector(size_t size, const T& value = T{}) : size(size)
 		{
 			data = (T*)_malloca(sizeof(T) * size);
 			for (size_t i = 0; i < size; i++)
@@ -95,7 +108,7 @@ namespace small
 				push_back(value);
 		}
 
-		vector(const std::initializer_list<T>& args)
+		vector(std::initializer_list<T> const& args)
 		{
 			reserve(args.size());
 			size = capacity = args.size();
