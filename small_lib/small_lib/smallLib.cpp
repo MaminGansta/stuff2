@@ -2,7 +2,7 @@
 #include <memory.h>
 #include <utility>
 #include <malloc.h>
-
+#include <stdio.h>
 #include <string>
 
 #ifndef MAX
@@ -14,11 +14,13 @@ namespace small
 
 	// ============ Arrays ===============
 
+	// stack allocated array
 	template <typename T, size_t capacity>
 	struct array
 	{
-		char c_data[capacity * sizeof(T)];
-		T* data = (T*)c_data;
+		char raw[capacity * sizeof(T)];
+		T* data = (T*)raw;
+		size_t cap = capacity;
 		size_t size = 0;
 
 		array() = default;
@@ -116,28 +118,28 @@ namespace small
 
 	// use structure less then 1024 B and it will be allocated on the stack
 	template <typename T>
-	struct svector
+	struct sarray
 	{
 		T* data;
 		size_t size;
 
-		svector(size_t size, const T& value = T{}) : size(size)
+		sarray(size_t size, const T& value = T{}) : size(size)
 		{
 			data = (T*)_malloca(sizeof(T) * size);
 			for (size_t i = 0; i < size; i++)
 				new(data + i) T(value);
 		}
 
-		~svector()
+		~sarray()
 		{
 			for (size_t i = 0; i < size; i++)
 				data[i].~T();
 			_freea(data);
 		}
-
 	};
 
 
+	// heap allocated array -----------
 	template <typename T>
 	struct vector
 	{
@@ -294,6 +296,48 @@ namespace small
 
 	};
 
+
+	// ============ queue =============
+
+	template <typename T, size_t capacity>
+	struct queue
+	{
+		T data[capacity];
+		T* head = data;
+		T* tail = data;
+		size_t size = 0;
+
+		queue() = default;
+
+		void push(const T& val)
+		{
+			if (size == capacity)
+			{
+				printf("queue is full");
+				return;
+			}
+			if (head >= data + capacity)
+				head = data;
+
+			*head++ = val;
+			size++;
+		}
+
+		T get()
+		{
+			if (size < 1)
+			{
+				printf("queue is empty");
+				return T{};
+			}
+			if (tail >= data + capacity)
+				tail = data;
+
+			size--;
+			return *tail++;
+		}
+
+	};
 
 
 	// ========== Hash tables ==============

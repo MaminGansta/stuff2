@@ -166,10 +166,10 @@ small::array<bread, size> gen_alg(small::array<bread, size> start)
 		{
 			if (bread::check_res(step[i]))
 			{
-				std::cout << "number: " << i << '\n';
+				std::cout << "\nnumber: " << i << "\nresult: ";
 				for (int j = 0; j < 3; j++)
 					std::cout << (int)step[i].chromo[j] << ' ';
-				std::cout << "\n\n";
+				std::cout << "\n";
 
 				// just to see last genration
 				evolution<bread, size>(step);

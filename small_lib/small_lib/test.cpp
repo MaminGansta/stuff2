@@ -65,8 +65,17 @@ int main(void)
 		a.push_back(b.front());
 
 
+	queue<int, 10> aa;
+	
 
+	for (int i = 0; i < 10; i++)
+		aa.push(i);
 
+	for (int i = 0; i < 5; i++)
+		std::cout << aa.get() << ' ';
+
+	for (int i = 0; i < 5; i++)
+		aa.push(i);
 
 	//vector<std::pair<int, int>> container[2];
 	//container[0].push_back(std::make_pair(1, 2));
