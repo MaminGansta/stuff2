@@ -17,30 +17,61 @@ namespace small
 	template <typename T, size_t capacity>
 	struct array
 	{
-		T data[capacity];
-		size_t size;
+		char c_data[capacity * sizeof(T)];
+		T* data = (T*)c_data;
+		size_t size = 0;
 
-		array() : size(0) {}
-		//array(array<T, capacity>&& ohter) = delete;
-		array(const T& val)
+		array() = default;
+		array(size_t to_fill, const T& val = T{})
 		{
-			size = capacity;
-			for (int i = 0; i < size; i++)
-				data[i] = val;
+			assert(to_fill <= capacity);
+			for (int i = 0; i < to_fill; i++)
+				push_back(val);
 		}
 		array(const std::initializer_list<T>& args)
 		{
-			//assert(args.size() <= capacity);
 			int i = 0;
 			size = args.size();
-			for (size_t i = 0; i < size; i++)
-				data[i] = *(args.begin() + i);
+			for (size_t i = 0; i < args.size(); i++)
+				push_back(*(args.begin() + i));
 		}
 		array(array<T, capacity> const& other)
 		{
+			for (int i = 0; i < other.size; i++)
+				push_back(other.data[i]);
+		}
+		array(array<T, capacity>&& other)
+		{
 			size = other.size;
+			other.size = 0;
 			for (int i = 0; i < size; i++)
-				data[i] = other.data[i];
+				data[i] = std::move(other.data[i]);
+		}
+		array& operator= (array<T, capacity> const& other)
+		{
+			for (int i = 0; i < size; i++)
+				data[i].~T();
+
+			size = 0;
+			for (int i = 0; i < other.size; i++)
+				push_back(other.data[i]);
+			return *this;
+		}
+		array& operator= (array<T, capacity>&& other)
+		{
+			for (int i = 0; i < size; i++)
+				data[i].~T();
+
+			size = other.size;
+			other.size = 0;
+			for (int i = 0; i < size; i++)
+				data[i] = std::move(other.data[i]);
+			return *this;
+		}
+		~array()
+		{
+			for (size_t i = 0; i < size; i++)
+				data[i].~T();
 		}
 
 		T& operator [] (int idx)
@@ -49,16 +80,37 @@ namespace small
 			return data[idx];
 		}
 
-		void push_back(const T& elem)
+		void push_back(const T& value)
 		{
 			assert(size < capacity);
-			data[size++] = elem;
+			new(data + size++) T(value);
+		}
+
+		void remove(int i)
+		{
+			assert((unsigned)i < size);
+			using std::swap;
+			swap(data[i], data[--size]);
+			data[size].~T();
+		}
+
+		void erase(int i)
+		{
+			assert((unsigned)i < size);
+			data[size].~T();
+			memmove(data + i, data + i + 1, sizeof(T) * (size - i));
+			size--;
 		}
 
 		T& pop()
 		{
 			return data[--size];
 		}
+
+		T& front() { return data[0]; }
+		T& back() { return data[size - 1]; }
+		T* begin() { return data; }
+		T* end() { return data + size; }
 	};
 
 
@@ -114,6 +166,47 @@ namespace small
 			size = capacity = args.size();
 			for (int i = 0; i < size; i++)
 				new(data + i) T(*(args.begin() + i));
+		}
+
+		vector(const vector<T>& other)
+		{
+			size = other.size;
+			capacity = size;
+			data = new T[size];
+			for (int i = 0; i < size; i++)
+				data[i] = other.data[i];
+		}
+
+		vector(vector<T>&& other)
+		{
+			data = other.data;
+			size = other.size;
+			capacity = other.capacity;
+			other.data = nullptr;
+			other.size = 0;
+			other.capacity = 0;
+		}
+
+		vector& operator= (const vector<T>& other)
+		{
+			delete[] data;
+			size = other.size;
+			capacity = size;
+			data = new T[size];
+			for (int i = 0; i < size; i++)
+				data[i] = other.data[i];
+		}
+
+		vector& operator= (vector<T>&& other)
+		{
+			delete[] data;
+			data = other.data;
+			size = other.size;
+			capacity = other.capacity;
+			other.data = nullptr;
+			other.size = 0;
+			other.capacity = 0;
+			return *this;
 		}
 
 		~vector()

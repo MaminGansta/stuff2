@@ -42,12 +42,31 @@ namespace small
 		}
 		array(array<T, capacity>&& other)
 		{
-			{
-				size = other.size;
-				other.size = 0;
-				for (int i = 0; i < size; i++)
-					data[i] = std::move(other.data[i]);
-			}
+			size = other.size;
+			other.size = 0;
+			for (int i = 0; i < size; i++)
+				data[i] = std::move(other.data[i]);
+		}
+		array& operator= (array<T, capacity> const& other)
+		{
+			for (int i = 0; i < size; i++)
+				data[i].~T();
+
+			size = 0;
+			for (int i = 0; i < other.size; i++)
+				push_back(other.data[i]);
+			return *this;
+		}
+		array& operator= (array<T, capacity>&& other)
+		{
+			for (int i = 0; i < size; i++)
+				data[i].~T();
+
+			size = other.size;
+			other.size = 0;
+			for (int i = 0; i < size; i++)
+				data[i] = std::move(other.data[i]);
+			return *this;
 		}
 		~array()
 		{
@@ -147,6 +166,47 @@ namespace small
 			size = capacity = args.size();
 			for (int i = 0; i < size; i++)
 				new(data + i) T(*(args.begin() + i));
+		}
+
+		vector(const vector<T>& other)
+		{
+			size = other.size;
+			capacity = size;
+			data = new T[size];
+			for (int i = 0; i < size; i++)
+				data[i] = other.data[i];
+		}
+
+		vector(vector<T>&& other)
+		{
+			data = other.data;
+			size = other.size;
+			capacity = other.capacity;
+			other.data = nullptr;
+			other.size = 0;
+			other.capacity = 0;
+		}
+
+		vector& operator= (const vector<T>& other)
+		{
+			delete[] data;
+			size = other.size;
+			capacity = size;
+			data = new T[size];
+			for (int i = 0; i < size; i++)
+				data[i] = other.data[i];
+		}
+
+		vector& operator= (vector<T>&& other)
+		{
+			delete[] data;
+			data = other.data;
+			size = other.size;
+			capacity = other.capacity;
+			other.data = nullptr;
+			other.size = 0;
+			other.capacity = 0;
+			return *this;
 		}
 
 		~vector()

@@ -55,8 +55,14 @@ struct mybread
 
 		mybread child = { (pair.second.whole << breakpoint >> breakpoint) | (pair.second.whole >> right << right) };
 
-		if (rand() % 100 < 50)
-			child.whole = child.whole ^ 1 << (rand() % 24 + 8);
+		// mutaion
+		//if (rand() % 100 < 50)
+		//	child.whole = child.whole ^ 1 << (rand() % 24 + 8);
+		
+		for (int i = 0; i < 24; i++)
+			if (rand() % 100 < 30)
+				child.whole = child.whole ^ 1 << 32 - i;
+
 
 		return child;
 	}
@@ -74,8 +80,8 @@ struct mybread
 };
 
 
-
 // create new generaion
+int cycles = 0;
 
 template <typename bread, size_t size>
 small::array<bread, size> evolution(small::array<bread, size> priv_generation)
@@ -108,17 +114,16 @@ small::array<bread, size> evolution(small::array<bread, size> priv_generation)
 		}
 	}
 
-	if (parents.size < size)
+	// random loop
+	while (parents.size < size)
 	{
-		while (parents.size < size)
+		std::uniform_real_distribution<> dis(0.0f, fitnes_total);
+		for (int i = 0; i < size; i++)
 		{
-			std::uniform_real_distribution<> dis(0.0f, fitnes_total);
-			for (int i = 0; i < size; i++)
-			{
-				if (parents.size == size) break;
-				if (fitnes_coef[i] > dis(gen))
-					parents.push_back(priv_generation[i]);
-			}
+			cycles++;
+			if (parents.size == size) break;
+			if (fitnes_value[i] > dis(gen))
+				parents.push_back(priv_generation[i]);
 		}
 	}
 
@@ -155,7 +160,7 @@ small::array<bread, size> gen_alg(small::array<bread, size> start)
 	small::array<bread, size> step = start;
 	bool ans = false;
 
-	while (time < 100 && !ans)
+	while (time < 1000 && !ans)
 	{
 
 		
@@ -171,7 +176,7 @@ small::array<bread, size> gen_alg(small::array<bread, size> start)
 		{
 			if (bread::check_res(step[i]))
 			{
-				std::cout << ' ' << i << '\n';
+				std::cout << "number: " << i << '\n';
 				for (int j = 0; j < 3; j++)
 					std::cout << (int)step[i].chromo[j] << ' ';
 				std::cout << '\n';
@@ -197,5 +202,6 @@ int main(void)
 	}
 
 	auto res = gen_alg(start);
+	std::cout  <<  "wasted cycles in a random loop: " << cycles;
 	return 0;
 }
