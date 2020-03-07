@@ -35,41 +35,24 @@ struct mybread
 		return (whole != other.whole);
 	}
 
-
-
 	static mybread crossover(std::pair<mybread, mybread> pair)
 	{
 		std::uniform_int_distribution<> dis(0, sizeof(char) * 3 * 8);
-
 		int breakpoint = dis(gen) + 8;
 		int right = (sizeof(char) * 4 * 8) - breakpoint;
 
-
-		//std::cout << "breakpoint: " << breakpoint << '\n';
-		//for (int i = 0; i < 3; i++)
-		//	std::cout << (int)chromo[i] << ' ';
-		//std::cout << '\n';
-		//for (int i = 0; i < 3; i++)
-		//	std::cout << (int)other.chromo[i] << ' ';
-		//std::cout << '\n';
-
 		mybread child = { (pair.second.whole << breakpoint >> breakpoint) | (pair.second.whole >> right << right) };
-
 		// mutaion
-		//if (rand() % 100 < 50)
-		//	child.whole = child.whole ^ 1 << (rand() % 24 + 8);
-		
 		for (int i = 0; i < 24; i++)
-			if (rand() % 100 < 30)
-				child.whole = child.whole ^ 1 << 32 - i;
-
+			if (rand() % 100 < 40)
+				child.whole = child.whole ^ 1 << 31 - i;
 
 		return child;
 	}
 
 	static float fitnes(mybread unit)
 	{
-		float temp = 1.0f / (abs(15 - (unit.chromo[0] + 2*unit.chromo[1] + 5*unit.chromo[3])) + 1);
+		float temp = 1.0f / (abs(15 - (unit.chromo[0] + 2*unit.chromo[1] + 5*unit.chromo[2])) + 1);
 		return temp;
 	}
 
@@ -127,9 +110,19 @@ small::array<bread, size> evolution(small::array<bread, size> priv_generation)
 		}
 	}
 
-	// make pairs ramdomly to cross them and get children
 	small::array<bread, size> children;
-	for (int i = 0; i < size; i++)
+
+	// find closest idntity from privius generation
+	int index = 0; float max = fitnes_value[0];
+	for (int i = 1; i < size; i++)
+		if (max < fitnes_value[i])
+			max = fitnes_value[i], index = i;
+	
+	// best parent move to the next generation automaticly
+	children.push_back(priv_generation[index]);
+
+	// make pairs ramdomly to cross them and get children
+	for (int i = 1; i < size; i++)
 	{
 		int first = rand() % 5;
 		int second = rand() % 5;
@@ -162,10 +155,7 @@ small::array<bread, size> gen_alg(small::array<bread, size> start)
 
 	while (time < 1000 && !ans)
 	{
-
-		
 		std::cout << "step " << time << "================" << '\n';
-
 		
 		// make new population
 		step = evolution<bread, size>(step);
@@ -179,7 +169,10 @@ small::array<bread, size> gen_alg(small::array<bread, size> start)
 				std::cout << "number: " << i << '\n';
 				for (int j = 0; j < 3; j++)
 					std::cout << (int)step[i].chromo[j] << ' ';
-				std::cout << '\n';
+				std::cout << "\n\n";
+
+				// just to see last genration
+				evolution<bread, size>(step);
 				ans = true;
 			}
 		}
@@ -187,7 +180,6 @@ small::array<bread, size> gen_alg(small::array<bread, size> start)
 
 	return step;
 }
-
 
 int main(void)
 {
@@ -202,6 +194,7 @@ int main(void)
 	}
 
 	auto res = gen_alg(start);
-	std::cout  <<  "wasted cycles in a random loop: " << cycles;
+
+	std::cout  <<  "\nwasted cycles in a random loop: " << cycles;
 	return 0;
 }
