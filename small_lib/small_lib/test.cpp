@@ -80,6 +80,11 @@ int main(void)
 	//vector<std::pair<int, int>> container[2];
 	//container[0].push_back(std::make_pair(1, 2));
 
+	timer t;
 
+	for (int i = 0; i < 100; i++)
+		std::cout << frng(-100, 110) << '\n';
+
+	std::cout << '\n' << t.elaped();
 	return 0;
 }

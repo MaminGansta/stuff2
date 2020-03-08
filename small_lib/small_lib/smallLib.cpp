@@ -4,6 +4,9 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <string>
+#include <random>
+#include <limits.h>
+#include <chrono>
 
 #ifndef MAX
 #define MAX(a,b) (a > b? a : b)
@@ -534,20 +537,50 @@ namespace small
 }
 
 
-/*
-	hash map with two arrays(keys, values)
-*/
-//template <typename Key, typename Val,
-//		  typename Hash = hash<Key>,
-//		  typename Equal = equal<Key>
-//> struct map
-//{
-//	size_t size;
-//	Key* keys;
-//	Val* values;
-//
-//	map()
-//	{
-//
-//	}
-//};
+// ============ random number generator ===============
+
+static std::random_device rd;
+static std::mt19937 gen(rd());
+
+static float frng(float from = 0.0f, float to = FLT_MAX)
+{
+	std::uniform_real_distribution<> dis(from, to);
+	return dis(gen);
+}
+
+static int rng(int from = 0, int to = INT_MAX)
+{
+	std::uniform_int_distribution<> dis(from, to);
+	return dis(gen);
+}
+
+
+
+// ============ timer =================
+using namespace std::chrono;
+
+struct timer
+{
+	high_resolution_clock::time_point init;
+	high_resolution_clock::time_point privius;
+
+	timer()
+	{
+		init = privius = high_resolution_clock::now();
+	}
+
+	float time()
+	{
+		high_resolution_clock::time_point now = high_resolution_clock::now();
+		duration<float>	dur = duration_cast<duration<float>>(now - init);
+		return dur.count();
+	}
+
+	float elaped()
+	{
+		high_resolution_clock::time_point now = high_resolution_clock::now();
+		duration<float>	dur = duration_cast<duration<float>>(now - privius);
+		privius = now;
+		return dur.count();
+	}
+};
