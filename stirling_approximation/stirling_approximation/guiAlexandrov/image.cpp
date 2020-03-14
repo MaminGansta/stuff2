@@ -171,6 +171,14 @@ struct fColor
 		return fColor(r + f.r, g + f.g, b + f.b);
 	}
 
+	fColor& operator +=(const fColor& f)
+	{
+		r += f.r;
+		g += f.g;
+		b += f.b;
+		return *this;
+	}
+
 	fColor operator /(float f)
 	{
 		return fColor(r / f, g / f, b / f);

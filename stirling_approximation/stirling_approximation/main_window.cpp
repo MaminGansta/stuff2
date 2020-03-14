@@ -5,37 +5,61 @@
 // input struct
 struct Params
 {
-	int A, B, C, D;
-	int alpa, betta, epsilon, gamma;
+	float A, B, C, D;
+	float alpa, betta, epsilon, gamma;
 	int nodes;
 	float delata;
 };
 
 fImage make_grafic(Params p)
 {
-	int width = 800, height = 600 * 0.7f;
+	p.A = -3;
+	p.B = 6;
+	p.C = -5;
+	p.D = 5;
+
+
+	int width = 1600, height = 600 * 1.4f;
 	fImage grafic(width, height);
 
 	// extract some params
-	//int grafic_w = p.B - p.A;
-	//int grafic_h = p.D - p.C;
-	int grafic_w = 2;
-	int grafic_h = 4;
+	int grafic_w = p.B - p.A;
+	int grafic_h = p.D - p.C;
+	//int grafic_w = 30;
+	//int grafic_h = 4;
 
 	float x_coef = float(grafic_w) / width ;
 	float y_coef = height / float(grafic_h) / 2;
 
-	// draw axises
+	// clear graph area
 	draw_filled_rect(grafic, 0, 0, 1.0f, 1.0f, fColor(0));
-	//fdraw_line(grafic, 0.01f, 0.01f, 0.01f, 0.9f, fColor(1.0f));
-	//fdraw_line(grafic, 0.01f, 0.01f, 0.9f, 0.01f, fColor(1.0f));
+	
+	// draw axises
+	if (p.A < 0 && p.B > 0)
+		for (int y = 0; y < height; y++)
+		{
+			drawPixel(grafic, width * (float(abs(p.A) / grafic_w)), y, fColor(1.0f));
+			drawPixel(grafic, width * (float(abs(p.A) / grafic_w)) + 1, y, fColor(1.0f));
+		}
 
-	for (int x = 0; x < width; x++)
+	// draw axises
+	if (p.C < 0 && p.D > 0)
+		for (int x = 0; x < width; x++)
+		{
+			drawPixel(grafic, x, height * (float(abs(p.C) / grafic_h)), fColor(1.0f));
+			drawPixel(grafic, x, height * (float(abs(p.C) / grafic_h)) + 1, fColor(1.0f));
+		}
+
+
+	for (int x = 0; x < width-1; x++)
 	{
-		float y =  sinf(tanf(x * x_coef)) + cosf(x * x_coef);
-		if (y < -4 || y > 4) continue;
+		float y =  sinf(tanf(2) * x * x_coef) + cosf(x * x_coef);
+		if (y < p.C || y > p.D) continue;
 		y = y * y_coef + height / 2;
-		drawPixel(grafic, x, y, fColor(1.0f));
+
+		for (int i = -2; i < 2; i++)
+			for (int j = -3; j < 3; j++)                // kek smooth))))) wtf
+				addPixel(grafic, x + i, y + j, fColor( min(1.0f, 9.0f / (1 + i*i +j*j)) ));
 	}
 
 	return grafic;
@@ -154,15 +178,15 @@ Params get_input(MainWindow* window)
 {
 	Params p;
 
-	p.A = wtoi(window->tA.getText());
-	p.B = wtoi(window->tB.getText());
-	p.C = wtoi(window->tC.getText());
-	p.D = wtoi(window->tD.getText());
+	p.A = wtof(window->tA.getText());
+	p.B = wtof(window->tB.getText());
+	p.C = wtof(window->tC.getText());
+	p.D = wtof(window->tD.getText());
 
-	p.alpa = wtoi(window->tAlpha.getText());
-	p.betta = wtoi(window->tBetta.getText());
-	p.epsilon= wtoi(window->tEpsilon.getText());
-	p.gamma= wtoi(window->tGamma.getText());
+	p.alpa = wtof(window->tAlpha.getText());
+	p.betta = wtof(window->tBetta.getText());
+	p.epsilon= wtof(window->tEpsilon.getText());
+	p.gamma= wtof(window->tGamma.getText());
 
 	p.nodes = wtoi(window->tNodes.getText());
 	p.delata= wtof(window->tDelta.getText());

@@ -119,6 +119,12 @@ inline void drawPixel(fImage& surface, int x, int y, fColor color)
 	surface[y * surface.width + x] = color;
 }
 
+inline void addPixel(fImage& surface, int x, int y, fColor color)
+{
+	if ((uint32_t)y >= surface.height || (uint32_t)x >= surface.width) return;
+	surface[y * surface.width + x] += color;
+}
+
 
 inline void drawLine(fImage& surface, int x, int y, int x2, int y2, fColor color)
 {
