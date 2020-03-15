@@ -1,7 +1,6 @@
 
 #define CALCULATE_ID 100
 
-
 // input struct
 struct Params
 {
@@ -13,11 +12,10 @@ struct Params
 
 fImage make_grafic(Params p)
 {
-	p.A = -3;
-	p.B = 6;
-	p.C = -5;
-	p.D = 5;
-
+	p.A = -99;
+	p.B = 99;
+	p.C = -99;
+	p.D = 99;
 
 	int width = 1600, height = 600 * 1.4f;
 	fImage grafic(width, height);
@@ -25,42 +23,61 @@ fImage make_grafic(Params p)
 	// extract some params
 	int grafic_w = p.B - p.A;
 	int grafic_h = p.D - p.C;
-	//int grafic_w = 30;
-	//int grafic_h = 4;
 
-	float x_coef = float(grafic_w) / width ;
+	float x_coef = float(grafic_w) / width;
 	float y_coef = height / float(grafic_h) / 2;
+
+	// step
+	float h = float(grafic_w) / p.nodes;
 
 	// clear graph area
 	draw_filled_rect(grafic, 0, 0, 1.0f, 1.0f, fColor(0));
-	
-	// draw axises
+
+	// draw y axises
 	if (p.A < 0 && p.B > 0)
+	{
 		for (int y = 0; y < height; y++)
 		{
 			drawPixel(grafic, width * (float(abs(p.A) / grafic_w)), y, fColor(1.0f));
 			drawPixel(grafic, width * (float(abs(p.A) / grafic_w)) + 1, y, fColor(1.0f));
 		}
+	}
 
-	// draw axises
+	// draw x axises
 	if (p.C < 0 && p.D > 0)
+	{
 		for (int x = 0; x < width; x++)
 		{
 			drawPixel(grafic, x, height * (float(abs(p.C) / grafic_h)), fColor(1.0f));
 			drawPixel(grafic, x, height * (float(abs(p.C) / grafic_h)) + 1, fColor(1.0f));
 		}
+	}
 
-
+	// draw original function
 	for (int x = 0; x < width-1; x++)
 	{
-		float y =  sinf(tanf(2) * x * x_coef) + cosf(x * x_coef);
+		float y =  p.alpa * sinf(tanf(p.betta) * x * x_coef) + p.epsilon * cosf(p.gamma * x * x_coef);
 		if (y < p.C || y > p.D) continue;
 		y = y * y_coef + height / 2;
 
 		for (int i = -2; i < 2; i++)
-			for (int j = -3; j < 3; j++)                // kek smooth))))) wtf
-				addPixel(grafic, x + i, y + j, fColor( min(1.0f, 9.0f / (1 + i*i +j*j)) ));
+			for (int j = -3; j < 3; j++)              // kek smooth)))))    wtf
+				addPixel(grafic, x + i, y + j, fColor( 1.0f / (1 + i*i + j*j)) );
 	}
+
+	// build stirling polinom
+	
+	// calculate ?y table
+	std::vector<std::vector<float>> table_delta_y(p.nodes, std::vector<float>(p.nodes));
+
+	for (int i = 0; i < p.nodes; i++)
+		table_delta_y[0][i] = p.alpa * sinf(tanf(p.betta) * (p.A + h*i) * x_coef) + p.epsilon * cosf(p.gamma * (p.A + h * i) * x_coef);
+
+	for (int i = 1; i < p.nodes; i++)
+		for (int j = 0; j < p.nodes - i; j++)
+			table_delta_y[i][j] = table_delta_y[i - 1][j+1] - table_delta_y[i - 1][j];
+
+
 
 	return grafic;
 }
@@ -133,7 +150,7 @@ struct MainWindow : Window
 
 		UINT myStyle = WS_VISIBLE | WS_CHILD | WS_BORDER;
 
-		lExpression.init(this->getHWND(), L"sin(tg(          x)) +           cos(          x)", 0, 0.1f, 0.02f, 0.53f, 0.06f, STATIC);
+		lExpression.init(this->getHWND(), L"sin(tg(          )x) +           cos(          x)", 0, 0.1f, 0.02f, 0.53f, 0.06f, STATIC);
 		tAlpha.init(this->getHWND(), 1, 0.03f, 0.02f, 0.07f, 0.06f, STATIC, myStyle);
 		tBetta.init(this->getHWND(), 2, 0.2f, 0.02f, 0.07f, 0.06f, STATIC, myStyle);
 		tEpsilon.init(this->getHWND(), 3, 0.35f, 0.02f, 0.07f, 0.06f, STATIC, myStyle);

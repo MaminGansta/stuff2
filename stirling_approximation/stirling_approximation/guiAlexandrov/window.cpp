@@ -219,10 +219,10 @@ struct Window
 					window->canvas.resize(hwnd);
 					components.update(hwnd);
 				}break;
-				//case WM_PAINT:
-				//{
-				//	components.redraw(hwnd);
-				//}break;
+				case WM_PAINT:
+				{
+					components.redraw(hwnd);
+				}break;
 				case  WM_GETMINMAXINFO:
 				{
 					LPMINMAXINFO lpMMI = (LPMINMAXINFO)lParam;
@@ -273,7 +273,8 @@ struct Window
 
 	void redraw()
 	{
-		RedrawWindow(getHWND(), 0, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
+		//RedrawWindow(getHWND(), 0, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
+		SendMessage(getHWND(), WM_PAINT, 0, 0);
 	}
 
 #define MAX_WIN_SIZE -1
