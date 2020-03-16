@@ -5,17 +5,24 @@
 struct Params
 {
 	float A, B, C, D;
-	float alpa, betta, epsilon, gamma;
+	float alpha, betta, epsilon, gamma;
 	int nodes;
 	float delata;
 };
 
 fImage make_grafic(Params p)
 {
-	p.A = -99;
+	p.alpha = 11;
+	p.betta = 1;
+	p.gamma = 1;
+	p.epsilon = 1;
+
+	p.A = -45;
 	p.B = 99;
 	p.C = -99;
 	p.D = 99;
+
+	p.nodes = 9;
 
 	int width = 1600, height = 600 * 1.4f;
 	fImage grafic(width, height);
@@ -33,7 +40,7 @@ fImage make_grafic(Params p)
 	// clear graph area
 	draw_filled_rect(grafic, 0, 0, 1.0f, 1.0f, fColor(0));
 
-	// draw y axises
+	// draw y axis
 	if (p.A < 0 && p.B > 0)
 	{
 		for (int y = 0; y < height; y++)
@@ -43,7 +50,7 @@ fImage make_grafic(Params p)
 		}
 	}
 
-	// draw x axises
+	// draw x axis
 	if (p.C < 0 && p.D > 0)
 	{
 		for (int x = 0; x < width; x++)
@@ -56,7 +63,8 @@ fImage make_grafic(Params p)
 	// draw original function
 	for (int x = 0; x < width-1; x++)
 	{
-		float y =  p.alpa * sinf(tanf(p.betta) * x * x_coef) + p.epsilon * cosf(p.gamma * x * x_coef);
+		float xx = x * x_coef - p.A;
+		float y =  p.alpha * sinf(tanf(p.betta) * xx) + p.epsilon * cosf(p.gamma * xx);
 		if (y < p.C || y > p.D) continue;
 		y = y * y_coef + height / 2;
 
@@ -65,18 +73,64 @@ fImage make_grafic(Params p)
 				addPixel(grafic, x + i, y + j, fColor( 1.0f / (1 + i*i + j*j)) );
 	}
 
-	// build stirling polinom
-	
-	// calculate ?y table
-	std::vector<std::vector<float>> table_delta_y(p.nodes, std::vector<float>(p.nodes));
+
+	// ===== build stirling polinom =====
+	// calculate delta y table
+	std::vector<std::vector<float>> table_delta_y(p.nodes, std::vector<float>());
 
 	for (int i = 0; i < p.nodes; i++)
-		table_delta_y[0][i] = p.alpa * sinf(tanf(p.betta) * (p.A + h*i) * x_coef) + p.epsilon * cosf(p.gamma * (p.A + h * i) * x_coef);
+		table_delta_y[0].push_back(p.alpha * sinf(tanf(p.betta) * (p.A + h*i) * x_coef) + p.epsilon * cosf(p.gamma * (p.A + h * i) * x_coef));
 
 	for (int i = 1; i < p.nodes; i++)
 		for (int j = 0; j < p.nodes - i; j++)
-			table_delta_y[i][j] = table_delta_y[i - 1][j+1] - table_delta_y[i - 1][j];
+			table_delta_y[i].push_back(table_delta_y[i - 1][j+1] - table_delta_y[i - 1][j]);
 
+
+	// prepare coeficients
+	std::vector<float> coefs(p.nodes);
+
+	int n = 1;
+	for (int i = 0; i < coefs.size(); i++)
+	{
+		n *= i ? i : 1;
+		std::vector<float>& delta_y = table_delta_y[i];
+		int center = delta_y.size() / 2;
+		
+		if (delta_y.size() & 1 && delta_y.size() > 1)
+			coefs[i] = (delta_y[center] + delta_y[center + 1]) / 2 / n;
+		else
+			coefs[i] = delta_y[center] / n;
+	}
+
+	// draw graph
+	float x0 = float(p.B - p.A) / 2.0f;
+
+	for (int x = 0; x < width - 1; x++)
+	{
+		float y = 0;
+		float q = (float(x * x_coef) - x0) / h;
+		
+		//float priv_step = 0;
+		for (int i = 0; i < coefs.size(); i++)
+		{
+			float a = 1.0f;
+			for (int j = -i; j < i; j++)
+				a *= q + j;
+
+			if (coefs.size() & 1 == 0)
+				a *= q;
+
+			y += coefs[i] * a;
+		}
+
+		//if (y < p.C || y > p.D) continue;
+		y = y * y_coef + height / 2 ;
+
+		for (int i = -2; i < 2; i++)
+			for (int j = -3; j < 3; j++)
+				drawPixel(grafic, x + i, y + j, fColor(1.0f, 0.0f, 0.0f));
+	
+	}
 
 
 	return grafic;
@@ -200,7 +254,7 @@ Params get_input(MainWindow* window)
 	p.C = wtof(window->tC.getText());
 	p.D = wtof(window->tD.getText());
 
-	p.alpa = wtof(window->tAlpha.getText());
+	p.alpha = wtof(window->tAlpha.getText());
 	p.betta = wtof(window->tBetta.getText());
 	p.epsilon= wtof(window->tEpsilon.getText());
 	p.gamma= wtof(window->tGamma.getText());
