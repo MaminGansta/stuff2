@@ -4,25 +4,26 @@
 // input struct
 struct Params
 {
-	float A, B, C, D;
-	float alpha, betta, epsilon, gamma;
+	double A, B, C, D;
+	double alpha, betta, epsilon, gamma;
 	int nodes;
-	float delata;
+	double delata;
 };
 
 fImage make_grafic(Params p)
 {
-	p.alpha = 11;
-	p.betta = 1;
-	p.gamma = 1;
-	p.epsilon = 1;
+	if (p.alpha == 0) p.alpha = 100;
+	if (p.betta == 0) p.betta = 1;
+	if (p.gamma == 0) p.gamma = 1;
+	if (p.epsilon == 0) p.epsilon = 1;
 
-	p.A = -45;
-	p.B = 99;
-	p.C = -99;
-	p.D = 99;
+	if (p.A == 0) p.A = -100;
+	if (p.B == 0) p.B = 100;
+	if (p.C == 0) p.C = -99;
+	if (p.D == 0) p.D = 99;
 
-	p.nodes = 9;
+	//if (p.nodes == 0)
+	//	p.nodes = 3;
 
 	int width = 1600, height = 600 * 1.4f;
 	fImage grafic(width, height);
@@ -31,11 +32,11 @@ fImage make_grafic(Params p)
 	int grafic_w = p.B - p.A;
 	int grafic_h = p.D - p.C;
 
-	float x_coef = float(grafic_w) / width;
-	float y_coef = height / float(grafic_h) / 2;
+	double x_coef = double(grafic_w) / width;
+	double y_coef = double(grafic_h) / (height / 2);
 
 	// step
-	float h = float(grafic_w) / p.nodes;
+	double h = double(grafic_w) / (p.nodes + 1);
 
 	// clear graph area
 	draw_filled_rect(grafic, 0, 0, 1.0f, 1.0f, fColor(0));
@@ -45,8 +46,8 @@ fImage make_grafic(Params p)
 	{
 		for (int y = 0; y < height; y++)
 		{
-			drawPixel(grafic, width * (float(abs(p.A) / grafic_w)), y, fColor(1.0f));
-			drawPixel(grafic, width * (float(abs(p.A) / grafic_w)) + 1, y, fColor(1.0f));
+			drawPixel(grafic, width * (double(abs(p.A) / grafic_w)), y, fColor(1.0f));
+			drawPixel(grafic, width * (double(abs(p.A) / grafic_w)) + 1, y, fColor(1.0f));
 		}
 	}
 
@@ -55,76 +56,93 @@ fImage make_grafic(Params p)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			drawPixel(grafic, x, height * (float(abs(p.C) / grafic_h)), fColor(1.0f));
-			drawPixel(grafic, x, height * (float(abs(p.C) / grafic_h)) + 1, fColor(1.0f));
+			drawPixel(grafic, x, height * (double(abs(p.C) / grafic_h)), fColor(1.0f));
+			drawPixel(grafic, x, height * (double(abs(p.C) / grafic_h)) + 1, fColor(1.0f));
 		}
 	}
 
 	// draw original function
 	for (int x = 0; x < width-1; x++)
 	{
-		float xx = x * x_coef - p.A;
-		float y =  p.alpha * sinf(tanf(p.betta) * xx) + p.epsilon * cosf(p.gamma * xx);
+		double xx = x * x_coef - p.A;
+		double y =  p.alpha * sinf(tanf(p.betta) * xx) + p.epsilon * cosf(p.gamma * xx);
 		if (y < p.C || y > p.D) continue;
 		y = y * y_coef + height / 2;
 
 		for (int i = -2; i < 2; i++)
 			for (int j = -3; j < 3; j++)              // kek smooth)))))    wtf
-				addPixel(grafic, x + i, y + j, fColor( 1.0f / (1 + i*i + j*j)) );
+				addPixel(grafic, x + i, y + j, fColor( 1.0 / (1 + i*i + j*j)) );
 	}
 
 
+	if (p.nodes == 0) return grafic;
 	// ===== build stirling polinom =====
 	// calculate delta y table
-	std::vector<std::vector<float>> table_delta_y(p.nodes, std::vector<float>());
+	std::vector<std::vector<double>> table_delta_y(p.nodes+1, std::vector<double>());
 
-	for (int i = 0; i < p.nodes; i++)
-		table_delta_y[0].push_back(p.alpha * sinf(tanf(p.betta) * (p.A + h*i) * x_coef) + p.epsilon * cosf(p.gamma * (p.A + h * i) * x_coef));
 
-	for (int i = 1; i < p.nodes; i++)
-		for (int j = 0; j < p.nodes - i; j++)
+	for (int i = 0; i <= p.nodes; i++)
+		table_delta_y[0].push_back(p.alpha * sinf(tanf(p.betta) * (p.A + h*i)) + p.epsilon * cosf(p.gamma * (p.A + h * i)));
+
+
+	//p.nodes = 3;
+	//table_delta_y[0].push_back(1.552);
+	//table_delta_y[0].push_back(1.6719);
+	//table_delta_y[0].push_back(1.7831);
+	//table_delta_y[0].push_back(1.8847);
+	//table_delta_y[0].push_back(1.9759);
+	//table_delta_y[0].push_back(2.0563);
+	//table_delta_y[0].push_back(2.125);
+		
+
+
+
+	for (int i = 1; i <= p.nodes; i++)
+		for (int j = 0; j <= p.nodes - i; j++)
 			table_delta_y[i].push_back(table_delta_y[i - 1][j+1] - table_delta_y[i - 1][j]);
 
 
 	// prepare coeficients
-	std::vector<float> coefs(p.nodes);
+	std::vector<double> coefs(p.nodes + 1);
 
 	int n = 1;
 	for (int i = 0; i < coefs.size(); i++)
 	{
 		n *= i ? i : 1;
-		std::vector<float>& delta_y = table_delta_y[i];
+		std::vector<double>& delta_y = table_delta_y[i];
 		int center = delta_y.size() / 2;
 		
-		if (delta_y.size() & 1 && delta_y.size() > 1)
-			coefs[i] = (delta_y[center] + delta_y[center + 1]) / 2 / n;
-		else
+		if (delta_y.size() & 1)
 			coefs[i] = delta_y[center] / n;
+		else
+			coefs[i] = (delta_y[center] + delta_y[center - 1]) / 2 / n;
 	}
 
 	// draw graph
-	float x0 = float(p.B - p.A) / 2.0f;
+	double x0 = double(p.B - p.A) / 2.0;
+	//double x0 = 0.35f;
 
 	for (int x = 0; x < width - 1; x++)
 	{
-		float y = 0;
-		float q = (float(x * x_coef) - x0) / h;
+		double y = 0;
+		double q = (double(x * x_coef) - x0) / h;
 		
-		//float priv_step = 0;
+		double priv_step = q;
 		for (int i = 0; i < coefs.size(); i++)
 		{
-			float a = 1.0f;
-			for (int j = -i; j < i; j++)
+			double a = 1.0;
+
+			for (int j = -i; j <= i; j++)
 				a *= q + j;
 
-			if (coefs.size() & 1 == 0)
+			if (i & 1 == 0)
 				a *= q;
 
 			y += coefs[i] * a;
 		}
 
 		//if (y < p.C || y > p.D) continue;
-		y = y * y_coef + height / 2 ;
+		y = y * y_coef + height / 2;
 
 		for (int i = -2; i < 2; i++)
 			for (int j = -3; j < 3; j++)
