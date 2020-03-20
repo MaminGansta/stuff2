@@ -1,4 +1,6 @@
 
+#define wtoi(str) ( str ? _wtoi(str) : 0)
+#define wtof(str) ( str ? _wtof(str) : 0.0f)
 
 struct Main_window : Window
 {
@@ -20,14 +22,11 @@ struct Main_window : Window
 	Table table;
 	
 	int nVars = 0, nLimits = 0;
-	small::vector<Label> lMarkers;
-	small::vector<Text> target_funtion;
-	small::vector<small::vector<Text>> limits;
 
 #define BTN_SOLVE 100
 	Button bSolve;
 	
-	Main_window() : limits(1, small::vector<Text>(16)) , lMarkers(16), target_funtion(16)
+	Main_window()
 	{
 		// window init
 		init(L"linear programming", 900, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
@@ -40,13 +39,19 @@ struct Main_window : Window
 					{
 						if (LOWORD(wParam) == BTN_SOLVE)
 						{
-							static int a = 14;
-							window->show_fields(a, a++);
+							window->table.get_data();
+							window->table.clear();
 						}
 
 						if ((HWND)lParam == window->tVars.handle || (HWND)lParam == window->tLimits.handle)
+						{
 							if (HIWORD(wParam) == 1024)
-								doutput("lol %d\n", HIWORD(wParam));
+							{
+								int columns = wtoi(window->tVars.getText());
+								int rows = wtoi(window->tLimits.getText());
+								window->show_fields(columns, rows);
+							}
+						}
 					}break;
 					case WM_PAINT:
 					{
@@ -54,7 +59,8 @@ struct Main_window : Window
 						GetClientRect(hwnd, &ClientRect);
 						PAINTSTRUCT ps;
 						BeginPaint(hwnd, &ps);
-						////draw_filled_rect(window->canvas, 0.0f, 0.0f, 1.0f, 1.0f, fColor(0.8f));
+
+						//draw_filled_rect(window->canvas, 0.0f, 0.0f, 1.0f, 1.0f, fColor(0.8f));
 						//FillRect(window->hdc, &ClientRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
 						EndPaint(hwnd, &ps);
@@ -114,14 +120,12 @@ struct Main_window : Window
 		table.init(getHWND(), 16, 16, 0.2f, 0.2f, 0.8f, 0.6f);
 		show_fields(2, 2);
 
-		//std::vector<std::wstring> rows{ L"1", L"2", L"3", L"3", L"1", L"2", L"3", L"3", L"1", L"2", L"3", L"3", L"3", L"1", L"2", L"3" };
-		//std::vector<std::wstring> cols{ L"1", L"2", L"3", L"3", L"1", L"2", L"3", L"3", L"1", L"2", L"3", L"3", L"3", L"1", L"2", L"3" };
-		//table.create(rows, cols);
-
 	}
 
 	void show_fields(int x, int y)
 	{
+		if (x > 16 || y > 16) return;
+
 		std::vector<std::wstring> rows;
 		std::vector<std::wstring> cols;
 		rows.reserve(x);

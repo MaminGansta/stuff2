@@ -177,7 +177,7 @@ namespace small
 		{
 			if (other.capacity == 0) return;
 			size = other.size;
-			capacity = size;
+			capacity = other.capacity;
 			data = (T*)::operator new(sizeof(T) * capacity);
 			for (int i = 0; i < size; i++)
 				new(data + i) T(other.data[i]);
@@ -201,7 +201,7 @@ namespace small
 			::operator delete(data);
 			
 			size = other.size;
-			capacity = size;
+			capacity = other.capacity;
 
 			data = (T*)::operator new(sizeof(T) * capacity);
 			for (int i = 0; i < size; i++)

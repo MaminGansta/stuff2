@@ -674,6 +674,7 @@ struct Label : Component
 
 struct Text : Component
 {
+	int cap = 10;
 	TCHAR* text = NULL;
 	
 	Text() = default;
@@ -702,6 +703,8 @@ struct Text : Component
 
 	void init(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
 	{
+		text = (TCHAR*)::operator new(cap * sizeof(TCHAR));
+
 		this->id = id;
 		this->x = x;
 		this->y = y;
@@ -724,26 +727,37 @@ struct Text : Component
 
 	TCHAR* getText()
 	{
-		delete[] text;
 		int nLength = GetWindowTextLength(handle);
 		if (nLength > 0)
 		{
-			text = new TCHAR[nLength + 1];
+			if (nLength > cap)
+			{
+				cap = nLength + 1;
+				::operator delete(text);
+				text = (TCHAR*)::operator new(cap * sizeof(TCHAR));
+			}
 			GetWindowText(handle, text, nLength + 1);
+			return text;
 		}
-		return text;
+		return NULL;
 	}
 
 	void SetText(TCHAR* text)
 	{
 		SetWindowText(handle, text);
 	}
+
+	void clear()
+	{
+		*text = '\0';
+		SetWindowText(handle, NULL);
+	}
 		
-	~Text() {  delete[] text; }
+	~Text() {  ::operator delete(text); }
 };
 
 
-// ========================= Table ================================
+// ========================= Table ================================ Not a table actually and very slow, because rows*cols windows's handlels are used
 #define TOTAL_SIZE 0
 #define CELL_SIZE 1
 
@@ -798,7 +812,19 @@ struct Table : Component
 
 	void create(const std::vector<std::wstring>& text_rows, const std::vector<std::wstring>& text_cols)
 	{
-		if (rows > cap_row || cols > cap_row) return;
+		if (text_rows.size() >= cap_row || text_cols.size() >= cap_row) return;
+		
+		// hide old elements
+		for (int i = 0; i < cols; i++)
+			col_labels[i].hide();
+
+		for (int i = 0; i < rows; i++)
+			row_labels[i].hide();
+
+		for (int i = 0; i < cols * rows; i++)
+			table[i].hide();
+
+		// rename and move elements for new pos
 		rows = text_rows.size();
 		cols = text_cols.size();
 
@@ -806,14 +832,14 @@ struct Table : Component
 			row_labels[i].set_text(text_rows[i]);
 
 		for (int i = 0; i < cols; i++)
-			col_labels[i].set_text(text_rows[i]);
+			col_labels[i].set_text(text_cols[i]);
 		
 		float cell_w, cell_h;
 		switch (size_type)
 		{
 			case TOTAL_SIZE:
 			{
-				cell_w = width / (1 + cols );
+				cell_w = width / (1 + cols);
 				cell_h = height /(1 +  rows);
 			}break;
 			case CELL_SIZE:
@@ -823,29 +849,49 @@ struct Table : Component
 			}break;
 		}
 
-		for (int i = 0; i < rows; i++)
-		{
-			row_labels[i].move(x + cell_w * i + cell_w, y);
-			row_labels[i].resize(cell_w, cell_h);
-			row_labels[i].show();
-		}
 		for (int i = 0; i < cols; i++)
 		{
-			col_labels[i].move(x, y + cell_h * i + cell_h);
+			col_labels[i].move(x + cell_w * i + cell_w, y);
 			col_labels[i].resize(cell_w, cell_h);
 			col_labels[i].show();
+		}
+		for (int i = 0; i < rows; i++)
+		{
+			row_labels[i].move(x, y + cell_h * i + cell_h);
+			row_labels[i].resize(cell_w, cell_h);
+			row_labels[i].show();
 		}
 
 		for (int i = 0; i < rows; i++)
 		{
 			for (int j = 0; j < cols; j++)
 			{
-				table[i * rows + j].move(x + cell_w * i + cell_w, y + cell_h * j + cell_h);
-				table[i * rows + j].resize(cell_w, cell_h);
-				table[i * rows + j].show();
+				table[i * cols + j].move(x + cell_w * j + cell_w, y + cell_h * i + cell_h);
+				table[i * cols + j].resize(cell_w, cell_h);
+				table[i * cols + j].show();
 			}
 		}
 	}
+
+	// TODO: return data from cells
+	std::vector<TCHAR*> get_data()
+	{
+		std::vector<TCHAR*> data;
+
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++)
+				data.push_back(table[i * cols + j].getText());
+
+		return data;
+	}
+
+	void clear()
+	{
+		for (int i = 0; i < cap_row; i++)
+			for (int j = 0; j < cap_col; j++)
+				table[i * cap_col + j].clear();
+	}
+
 };
 
 
