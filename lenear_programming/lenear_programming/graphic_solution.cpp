@@ -1,15 +1,11 @@
 
-fImage make_graph()
-{
-	return fImage(800, 400);
-}
 
 template <typename T>
 struct Graph_window : Window
 {
 	fImage graph;
 
-	Graph_window(const std::vector<T>& target, const Mat<T>& limits)
+	Graph_window(const std::vector<T>& target, Mat<T>& limits, int type)
 	{
 		init(L"graphic methid", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
 			{
@@ -41,12 +37,59 @@ struct Graph_window : Window
 		solve(target, limits);
 	}
 
-	void solve(const std::vector<T>& target, const Mat<T>& limits))
+	void solve(const std::vector<T>& target, Mat<T>& limits)
 	{
-		
+		std::vector<std::vector<T>> points;
+		Mat<T> temp(2, limits.column);
 
-		//graph = make_graph();
-		//redraw();
+		for (int i = 0; i < limits.row; i++)
+		{
+			for (int j = i; j < limits.row; j++)
+			{
+				if (i == j) continue;
+
+				for (int a = 0; a < temp.column; a++)
+				{
+					temp[0][a] = limits[i][a];
+					temp[1][a] = limits[j][a];
+				}
+
+				auto [flag, intersection] = gausian_method(temp);
+
+				if (flag > 0)
+					points.push_back(intersection);
+			}
+		}
+
+		make_graph(points, limits, target);
+		redraw();
+	}
+
+
+	void make_graph(const std::vector<std::vector<T>>& points, Mat<T>& limits, const std::vector<T>& target)
+	{
+		graph.resize(800, 400);
+		int zero = 200;
+		int x0 = -200, x1 = 200;
+		int coef = 10;
+
+		// draw axises
+		drawLine(graph, 0, zero, graph.width, zero, fColor(1.0f));
+		drawLine(graph, zero, 0, zero, graph.height, fColor(1.0f));
+
+		for (int i = 0; i < limits.row; i++)
+		{
+			int y0 = (limits[i][limits.column - 1] - limits[i][limits.column - 2] * x0) / limits[i][0] + 0.0f;
+			int y1 = (limits[i][limits.column - 1] - limits[i][limits.column - 2] * x1) / limits[i][0] + 0.0f;
+			
+			x0 *= coef;
+			x1 *= coef;
+			y0 *= coef;
+			y1 *= coef;
+
+			drawLine(graph, x0 + zero, y0 + zero, x1 + zero, y1 + zero, fColor(1.0f));
+		}
+
 	}
 
 

@@ -57,14 +57,28 @@ struct Main_window : Window
 								std::vector<float> target = window->text2float(target_text);
 								std::vector<float> basis = window->text2float(basis_text);
 								Mat<float> limits = window->vec2mat(window->text2float(limits_text), window->nVars, window->nLimits);
-								new Graph_window(target, limits);
+
+								if (window->cMethod.choosed_index() == 0)
+								{
+									if (window->nVars > 2) 
+										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
+									else
+										new Graph_window(target, limits, window->cMin_max.choosed_index());
+								}
 							}
 							else
 							{
 								std::vector<Fraction> target = window->text2fraction(target_text);
 								std::vector<Fraction> basis = window->text2fraction(basis_text);
 								Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
-								new Graph_window(target, limits);
+								
+								if (window->cMethod.choosed_index() == 0)
+								{
+									if (window->nVars > 2)
+										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
+									else
+										new Graph_window(target, limits, window->cMin_max.choosed_index());
+								}
 							}
 						}
 
@@ -121,7 +135,7 @@ struct Main_window : Window
 		set_font_size(lMethod.handle, 25);
 		
 		cMethod.init(getHWND(), 1, 0.05f, 0.1f, 0.15f, 0.05f, RESIZABLE, cStyle);
-		cMethod.add(L"graph");
+		cMethod.add(L"graphic");
 		cMethod.add(L"simplex");
 		
 		
@@ -137,7 +151,7 @@ struct Main_window : Window
 		
 		cNumbers_type.init(getHWND(), 1, 0.05f, 0.4f, 0.15f, 0.05f, RESIZABLE, cStyle);
 		cNumbers_type.add(L"decimal");
-		cNumbers_type.add(L"usual");
+		cNumbers_type.add(L"fraction");
 		
 		
 		lVars.init(getHWND(), L"Variabals amount", 0, 0, 0.5f, 0.2f, 0.05f, RESIZABLE, lStyle);
@@ -237,7 +251,7 @@ struct Main_window : Window
 			{
 				case 0:
 				{
-					output.push_back(Fraction());
+					output.push_back(Fraction(0, 1));
 				}break;
 				case 1:
 				{
@@ -257,6 +271,7 @@ struct Main_window : Window
 	template <typename T>
 	Mat<T> vec2mat(const std::vector<T>& data, int cols, int rows)
 	{
+		cols++;
 		Mat<T> mat(rows, cols);
 		for (int i = 0; i < rows; i++)
 			for (int j = 0; j < cols; j++)

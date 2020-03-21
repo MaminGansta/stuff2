@@ -15,8 +15,18 @@ struct Fraction
 	int top = 0, bottom = 0;
 
 	Fraction() = default;
+	Fraction(int t) : top(t), bottom(t) {}
 	Fraction(int t, int b) : top(t), bottom(b) {}
-	
+	Fraction(const Fraction& f) : top(f.top), bottom(f.bottom) {}
+	Fraction& operator= (const Fraction& f) { top = f.top;  bottom = f.bottom; return *this; }
+	Fraction& operator-= (const Fraction& f)
+	{
+		float  a = gcd(bottom, f.bottom);
+		top *= (a / bottom) - f.top * (a / f.bottom);
+		bottom = a;
+		return *this;
+	}
+
 	Fraction operator+ (Fraction other)
 	{
 		float a = gcd(bottom, other.bottom);
@@ -26,6 +36,11 @@ struct Fraction
 	Fraction operator+ (int other)
 	{
 		return Fraction( top + other * bottom, bottom );
+	}
+
+	float operator+ (float other)
+	{
+		return tof() + other;
 	}
 
 	Fraction operator- (Fraction other)
@@ -49,6 +64,31 @@ struct Fraction
 	Fraction operator* (int other)
 	{
 		return Fraction( top * other, bottom );
+	}
+
+	float operator* (float other)
+	{
+		return tof() * other;
+	}
+
+	Fraction operator-()
+	{
+		return Fraction(-top, -bottom);
+	}
+
+	bool operator< (Fraction f)
+	{
+		return top * f.bottom < f.top* bottom;
+	}
+
+	bool operator> (float f)
+	{
+		return tof() > f;
+	}
+
+	float tof()
+	{
+		return float(top) / bottom;
 	}
 };
 
@@ -100,6 +140,8 @@ struct Mat
 		assert(i < row);
 		return mat + i * column;
 	}
+
+	
 
 };
 
