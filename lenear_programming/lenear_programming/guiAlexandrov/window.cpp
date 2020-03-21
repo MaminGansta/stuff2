@@ -812,7 +812,8 @@ struct Table : Component
 
 	void create(const std::vector<std::wstring>& text_rows, const std::vector<std::wstring>& text_cols)
 	{
-		if (text_rows.size() >= cap_row || text_cols.size() >= cap_row) return;
+		if (text_rows.size() > cap_row || text_cols.size() > cap_col) return;
+		if (text_rows.size() == 0 && text_cols.size() == 0) return;
 		
 		// hide old elements
 		for (int i = 0; i < cols; i++)
@@ -862,6 +863,7 @@ struct Table : Component
 			row_labels[i].show();
 		}
 
+		rows = rows ? rows : 1;
 		for (int i = 0; i < rows; i++)
 		{
 			for (int j = 0; j < cols; j++)
@@ -873,7 +875,6 @@ struct Table : Component
 		}
 	}
 
-	// TODO: return data from cells
 	std::vector<TCHAR*> get_data()
 	{
 		std::vector<TCHAR*> data;
@@ -897,10 +898,12 @@ struct Table : Component
 
 // ============== Some functions ======================
 
+#define wtoi(str) ( str ? _wtoi(str) : 0)
+#define wtof(str) ( str ? _wtof(str) : 0.0f)
+
 
 void set_font_size(HWND handle, int size)
 {
-
 	HFONT hFont = CreateFont(size, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Arial");
 	SendMessage(handle, WM_SETFONT, WPARAM(hFont), FALSE);
 }
@@ -908,7 +911,6 @@ void set_font_size(HWND handle, int size)
 
 void set_font(HWND handle, HFONT font)
 {
-
 	SendMessage(handle, WM_SETFONT, WPARAM(font), FALSE);
 }
 
