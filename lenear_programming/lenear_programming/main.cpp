@@ -1,4 +1,3 @@
-
 #include "guiAlexandrov/include.h"
 
 #include "stuff.cpp"

@@ -60,7 +60,7 @@ struct Main_window : Window
 
 								if (window->cMethod.choosed_index() == 0)
 								{
-									if (window->nVars > 2) 
+									if (window->nVars != 2) 
 										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
@@ -74,7 +74,7 @@ struct Main_window : Window
 								
 								if (window->cMethod.choosed_index() == 0)
 								{
-									if (window->nVars > 2)
+									if (window->nVars != 2)
 										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
