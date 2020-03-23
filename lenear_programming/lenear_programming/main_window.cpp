@@ -65,6 +65,8 @@ struct Main_window : Window
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
+								else
+									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 							else
 							{
@@ -72,6 +74,7 @@ struct Main_window : Window
 								std::vector<Fraction> basis = window->text2fraction(basis_text);
 								Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
 								
+								// graphic method
 								if (window->cMethod.choosed_index() == 0)
 								{
 									if (window->nVars != 2)
@@ -79,9 +82,12 @@ struct Main_window : Window
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
+								// simplex method
+								else
+									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 						}
-
+						// Button clear pushed
 						if (LOWORD(wParam) == BTN_CLEAR)
 						{
 							window->limits.clear();
@@ -89,6 +95,7 @@ struct Main_window : Window
 							window->target.clear();
 						}
 
+						// Data was put into the amount gap (Vars or limits)
 						if ((HWND)lParam == window->tVars.handle || (HWND)lParam == window->tLimits.handle)
 						{
 							if (HIWORD(wParam) == 1024)
@@ -103,18 +110,6 @@ struct Main_window : Window
 							}
 						}
 					}break;
-					case WM_PAINT:
-					{
-						RECT ClientRect;
-						GetClientRect(hwnd, &ClientRect);
-						PAINTSTRUCT ps;
-						BeginPaint(hwnd, &ps);
-
-						//draw_filled_rect(window->canvas, 0.0f, 0.0f, 1.0f, 1.0f, fColor(0.8f));
-						//FillRect(window->hdc, &ClientRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
-
-						EndPaint(hwnd, &ps);
-					}return 0;
 					case WM_CLOSE:
 					{
 						PostQuitMessage(0);
@@ -168,7 +163,7 @@ struct Main_window : Window
 		bClear.init(getHWND(), L"clear", BTN_CLEAR, 0.01f, 0.95f, 0.1f, 0.05f, RESIZABLE);
 
 
-		// create input fileds
+		// create input fileds table
 		Limits.init(getHWND(), L"Limits", 0, 0.2f, 0.15f, 0.1f, 0.05f);
 		set_font_size(Limits.handle, 25);
 
@@ -187,7 +182,7 @@ struct Main_window : Window
 
 // ============== Layout =================
 
-	// ======= Input fields
+	// ======= Input fields table setup =========
 	void show_fields(int x, int y)
 	{
 		if (x > 16 || y > 16) return;
@@ -224,7 +219,7 @@ struct Main_window : Window
 	}
 
 	
-	// ====== Parse data
+	// ====== Parse data ======
 	std::vector<float> text2float(const std::vector<TCHAR*>& text)
 	{
 		std::vector<float> output;
@@ -251,7 +246,7 @@ struct Main_window : Window
 			{
 				case 0:
 				{
-					output.push_back(Fraction(0, 1));
+					output.push_back(Fraction());
 				}break;
 				case 1:
 				{

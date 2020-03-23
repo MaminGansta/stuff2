@@ -17,7 +17,7 @@ fImage make_grafic(Params p)
 	if (p.gamma == 0) p.gamma = 1;
 	if (p.epsilon == 0) p.epsilon = 1;
 
-	if (p.A == 0) p.A = 0;
+	if (p.A == 0) p.A = -10;
 	if (p.B == 0) p.B = 10;
 	if (p.C == 0) p.C = -10;
 	if (p.D == 0) p.D = 10;

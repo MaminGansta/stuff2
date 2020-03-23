@@ -1,5 +1,6 @@
-
+﻿
 // =========================================== CALLBACK ARGUMENTS =============================================================
+
 
 struct Args
 {
@@ -892,6 +893,135 @@ struct Table : Component
 			for (int j = 0; j < cap_col; j++)
 				table[i * cap_col + j].clear();
 	}
+
+};
+
+
+// ==================== ListView =========================
+#define DEF_LISTVIEW WS_CHILD | LVS_REPORT
+
+struct ListView : Component
+{
+	int columns = 0;
+
+	ListView() = default;
+	ListView(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
+	{
+		init(parent, id, x, y, width, height, type, style);
+	}
+
+	void init(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
+	{
+
+		INITCOMMONCONTROLSEX icex;
+		icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+		icex.dwICC = ICC_LISTVIEW_CLASSES;
+		InitCommonControlsEx(&icex);
+
+
+		RECT rect;
+		GetClientRect(parent, &rect);
+		int nWidth = rect.right - rect.left;
+		int nHeight = rect.bottom - rect.top;
+
+		handle = CreateWindow(WC_LISTVIEW, L"",
+			WS_CHILD | LVS_REPORT | WS_VISIBLE,
+			x * nWidth, y * nHeight, width * nWidth, height * nHeight,
+			parent, (HMENU)0, GetModuleHandle(NULL), NULL);
+
+		ListView_SetExtendedListViewStyleEx(handle, 0, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+
+		this->id = id;
+		this->x = x;
+		this->y = y;
+		this->width = width;
+		this->height = height;
+		this->parent = parent;
+		this->type = type;
+		this->style = style;
+
+		components.add(parent, this);
+	}
+
+	void add_columns(std::vector<std::wstring> columns)
+	{
+		this->columns = columns.size();
+		LVCOLUMN lvc;
+
+		RECT rect;
+		GetClientRect(parent, &rect);
+		int nWidth = rect.right - rect.left;
+
+		int colum_size = nWidth * width / columns.size();
+
+		// Initialize the LVCOLUMN structure.
+		// The mask specifies that the format, width, text,
+		// and subitem members of the structure are valid.
+		lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM | LVIF_COLFMT;
+
+		// Add the columns.
+		for (int iCol = 0; iCol < columns.size(); iCol++)
+		{
+			lvc.iSubItem = iCol;
+			lvc.pszText = (LPWSTR)columns[iCol].c_str();
+			lvc.cx = colum_size;               // Width of column in pixels.
+
+			if (iCol < 2)
+				lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
+			else
+				lvc.fmt = LVCFMT_RIGHT; // Right-aligned column.
+
+			// Insert the columns into the list view.
+			if (ListView_InsertColumn(handle, iCol, &lvc) == -1)
+				doutput("listview insert problem");
+		}
+	}
+
+	void add_row(std::vector<std::wstring> row)
+	{
+		int textMaxLen = 10;
+
+		int iLastIndex = ListView_GetItemCount(handle);
+
+		LVITEM lvi;
+		lvi.mask = LVIF_TEXT;
+		lvi.cchTextMax = textMaxLen;
+		lvi.iItem = iLastIndex;
+		lvi.pszText = (LPWSTR)row[0].c_str();
+		lvi.iSubItem = 0;
+
+		if (ListView_InsertItem(handle, &lvi) != -1)
+			for (int i = 1; i < row.size(); i++)
+				ListView_SetItemText(handle, iLastIndex, i, (LPWSTR)row[i].c_str());
+	}
+
+	void add_rows(std::vector<std::vector<std::wstring>> rows)
+	{
+		int textMaxLen = 10;
+		const wchar_t* item[] = { L"df", L"sdfads", L"dsf" };
+
+		int iLastIndex = ListView_GetItemCount(handle);
+
+		for (int i = 0; i < rows.size(); i++)
+		{
+			LVITEM lvi;
+			lvi.mask = LVIF_TEXT;
+			lvi.cchTextMax = textMaxLen;
+			lvi.iItem = iLastIndex;
+			lvi.pszText = (LPWSTR)item[0];
+			lvi.iSubItem = 0;
+
+			if (ListView_InsertItem(handle, &lvi) != -1)
+				for (int i = 1; i < rows[i].size(); i++)
+					ListView_SetItemText(handle, iLastIndex, i, (LPWSTR)item[i]);
+
+			ListView_SetColumnWidth(handle, 1, LVSCW_AUTOSIZE);
+		}
+	}
+
+
+
+
 
 };
 
