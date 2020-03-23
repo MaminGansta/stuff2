@@ -19,7 +19,7 @@ int lcm(int a, int b)
 
 struct Fraction
 {
-	int top = 0, bottom = 0;
+	int top = 0, bottom = 1;
 
 	Fraction() = default;
 	Fraction(int t) : top(t), bottom(1) {}
