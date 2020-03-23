@@ -29,7 +29,7 @@ std::tuple<int, std::vector<T>> gausian_method(Mat<T> mat)
 		for (int i = row; i < mat.row; i++)
 			if (myabs(mat[pivot][column]) < myabs(mat[i][column])) pivot = i;
 
-		if (myabs(mat[pivot][column] + 0.000001f) < 0.0001f) continue;
+		if (myabs(mat[pivot][column] + 0.0f) < 0.0001f) continue;
 
 		for (int i = 0; i < mat.column; i++)
 			std::swap(mat[pivot][i], mat[row][i]);

@@ -1,20 +1,5 @@
 
 template <typename T>
-void output(wchar_t buffer[], T a, T b);
-
-template <>
-void output<float>(wchar_t buffer[], float a, float b)
-{
-	swprintf_s(buffer, 32, L"X = (%.4f, %.4f)", a, b);
-}
-
-template <>
-void output<Fraction>(wchar_t buffer[], Fraction a, Fraction b)
-{
-	swprintf_s(buffer, 32, L"X = (%d/%d, %d/%d)", a.top, a.bottom, b.top, b.bottom);
-}
-
-template <typename T>
 struct Graph_window : Window
 {
 	fImage graph;

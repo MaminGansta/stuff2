@@ -1,4 +1,5 @@
 
+// great common divisor
 int gcd(int a, int b)
 {
 	while (b)
@@ -6,69 +7,96 @@ int gcd(int a, int b)
 		a %= b;
 		std::swap(a, b);
 	}
-
 	return a;
 }
+
+// least common multiple
+int lcm(int a, int b)
+{
+	return abs(a * b) / gcd(a, b);
+}
+
 
 struct Fraction
 {
 	int top = 0, bottom = 0;
 
 	Fraction() = default;
-	Fraction(int t) : top(t), bottom(t) {}
-	Fraction(int t, int b) : top(t), bottom(b) {}
+	Fraction(int t) : top(t), bottom(1) {}
 	Fraction(const Fraction& f) : top(f.top), bottom(f.bottom) {}
+	Fraction(int t, int b)
+	{
+		int g = gcd(t, b);
+		top = t / g;
+		bottom = b / g;
+	}
 	Fraction& operator= (const Fraction& f) { top = f.top;  bottom = f.bottom; return *this; }
 	Fraction& operator-= (const Fraction& f)
 	{
-		float  a = gcd(bottom, f.bottom);
-		top *= (a / bottom) - f.top * (a / f.bottom);
-		bottom = a;
+		int l = lcm(bottom, f.bottom);
+		int t1 = top * (float(l) / bottom);
+		int t2 = f.top * (float(l) / f.bottom);
+		top = t1 - t2;
+		bottom = l;
+
+		int g = gcd(top, bottom);
+		top /= g;
+		bottom /= g;
+
+		return *this;
+	}
+	Fraction& operator+= (const Fraction& f)
+	{
+		int l = lcm(bottom, f.bottom);
+		int t1 = top * (float(l) / bottom);
+		int t2 = f.top * (float(l) / f.bottom);
+		top = t1 + t2;
+		bottom = l;
+
+		int g = gcd(top, bottom);
+		top /= g;
+		bottom /= g;
+
 		return *this;
 	}
 
-	Fraction operator+ (Fraction other)
+	Fraction operator+ (Fraction f)
 	{
-		float a = gcd(bottom, other.bottom);
-		return Fraction( top * (a / bottom) + other.top * (a / other.bottom), a );
+		int l = lcm(bottom, f.bottom);
+		int t1 = top * (float(l) / bottom);
+		int t2 = f.top * (float(l) / f.bottom);
+		int temp_top = t1 + t2;
+		int temp_bottom = l;
+
+		int g = gcd(temp_top, temp_bottom);
+		return Fraction(temp_top / g, temp_bottom / g);
 	}
 
-	Fraction operator+ (int other)
+	Fraction operator- (Fraction f)
 	{
-		return Fraction( top + other * bottom, bottom );
+		int l = lcm(bottom, f.bottom);
+		int t1 = top * (float(l) / bottom);
+		int t2 = f.top * (float(l) / f.bottom);
+		int temp_top = t1 - t2;
+		int temp_bottom = l;
+
+		int g = gcd(temp_top, temp_bottom);
+		return Fraction(temp_top / g, temp_bottom / g);
 	}
 
-	float operator+ (float other)
-	{
-		return tof() + other;
-	}
-
-	Fraction operator- (Fraction other)
-	{
-		// gcd
-		float  a = gcd(bottom, other.bottom);
-		return Fraction( top * (a / bottom) - other.top * (a / other.bottom), a );
-
-	}
 
 	Fraction operator* (Fraction other)
 	{
-		return Fraction( top * other.top, bottom * other.bottom );
+		return Fraction(top * other.top, bottom * other.bottom);
 	}
 
 	Fraction operator/ (Fraction other)
 	{
-		return Fraction( top * other.bottom, bottom * other.top );
-	}
+		int temp_top = top * other.bottom;
+		int temp_bottom = bottom * other.top;
 
-	Fraction operator* (int other)
-	{
-		return Fraction( top * other, bottom );
-	}
-
-	float operator* (float other)
-	{
-		return tof() * other;
+		int g = gcd(temp_top, temp_bottom);
+		return Fraction(temp_top / g, temp_bottom / g);
 	}
 
 	Fraction operator-()
@@ -81,6 +109,29 @@ struct Fraction
 		return top * f.bottom < f.top* bottom;
 	}
 
+	// int
+	Fraction operator+ (int other)
+	{
+		return Fraction(top + other * bottom, bottom);
+	}
+
+	Fraction operator* (int other)
+	{
+		return Fraction(top * other, bottom);
+	}
+
+	// float
+	float operator* (float other)
+	{
+		return tof() * other;
+	}
+
+	float operator+ (float other)
+	{
+		return tof() + other;
+	}
+
+
 	bool operator> (float f)
 	{
 		return tof() > f;
@@ -91,6 +142,24 @@ struct Fraction
 		return float(top) / bottom;
 	}
 };
+
+
+// output for float and Fraction
+template <typename T>
+void output(wchar_t buffer[], T a, T b);
+
+template <>
+void output<float>(wchar_t buffer[], float a, float b)
+{
+	swprintf_s(buffer, 32, L"X = (%.4f, %.4f)", a, b);
+}
+
+template <>
+void output<Fraction>(wchar_t buffer[], Fraction a, Fraction b)
+{
+	swprintf_s(buffer, 32, L"X = (%d/%d, %d/%d)", a.top, a.bottom, b.top, b.bottom);
+}
+
 
 
 template <typename T>
