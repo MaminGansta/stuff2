@@ -134,7 +134,7 @@ std::tuple<int, std::vector<float>> gausian_method(matf mat)
 			if (i != row)
 			{
 				double c = mat[i][column] / mat[row][column];
-				for (int j = column; j <= mat.row; j++)
+				for (int j = column; j < mat.column; j++)
 					mat[i][j] -= mat[row][j] * c;
 			}
 		}

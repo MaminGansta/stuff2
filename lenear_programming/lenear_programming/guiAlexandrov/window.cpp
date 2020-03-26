@@ -1,7 +1,6 @@
 ﻿
 // =========================================== CALLBACK ARGUMENTS =============================================================
 
-
 struct Args
 {
 	void* vals[2];
@@ -33,7 +32,6 @@ struct Arguments
 	}
 };
 Arguments arguments;
-
 
 
 // ================================== WINDOW COMPONENTS ====================================================
@@ -898,19 +896,19 @@ struct Table : Component
 
 
 // ==================== ListView =========================
-#define DEF_LISTVIEW WS_CHILD | LVS_REPORT
+#define DEF_LISTVIEW	WS_CHILD | LVS_REPORT | WS_VISIBLE
 
 struct ListView : Component
 {
 	int columns = 0;
 
 	ListView() = default;
-	ListView(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
+	ListView(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LISTVIEW)
 	{
 		init(parent, id, x, y, width, height, type, style);
 	}
 
-	void init(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
+	void init(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LISTVIEW)
 	{
 
 		INITCOMMONCONTROLSEX icex;
@@ -924,10 +922,9 @@ struct ListView : Component
 		int nWidth = rect.right - rect.left;
 		int nHeight = rect.bottom - rect.top;
 
-		handle = CreateWindow(WC_LISTVIEW, L"",
-			WS_CHILD | LVS_REPORT | WS_VISIBLE,
+		handle = CreateWindow(WC_LISTVIEW, L"", style,
 			x * nWidth, y * nHeight, width * nWidth, height * nHeight,
-			parent, (HMENU)0, GetModuleHandle(NULL), NULL);
+			parent, (HMENU)id, hInst, NULL);
 
 		ListView_SetExtendedListViewStyleEx(handle, 0, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
@@ -993,35 +990,34 @@ struct ListView : Component
 		if (ListView_InsertItem(handle, &lvi) != -1)
 			for (int i = 1; i < row.size(); i++)
 				ListView_SetItemText(handle, iLastIndex, i, (LPWSTR)row[i].c_str());
+		
+			// align the table
+		ListView_SetColumnWidth(handle, 1, LVSCW_AUTOSIZE);
 	}
 
 	void add_rows(std::vector<std::vector<std::wstring>> rows)
 	{
 		int textMaxLen = 10;
-		const wchar_t* item[] = { L"df", L"sdfads", L"dsf" };
-
-		int iLastIndex = ListView_GetItemCount(handle);
 
 		for (int i = 0; i < rows.size(); i++)
 		{
+			int iLastIndex = ListView_GetItemCount(handle);
+
 			LVITEM lvi;
 			lvi.mask = LVIF_TEXT;
 			lvi.cchTextMax = textMaxLen;
 			lvi.iItem = iLastIndex;
-			lvi.pszText = (LPWSTR)item[0];
+			lvi.pszText = (LPWSTR)rows[i][0].c_str();
 			lvi.iSubItem = 0;
 
 			if (ListView_InsertItem(handle, &lvi) != -1)
-				for (int i = 1; i < rows[i].size(); i++)
-					ListView_SetItemText(handle, iLastIndex, i, (LPWSTR)item[i]);
+				for (int j = 1; j < rows[i].size(); j++)
+					ListView_SetItemText(handle, iLastIndex, j, (LPWSTR)rows[i][j].c_str());
 
+			// align the table
 			ListView_SetColumnWidth(handle, 1, LVSCW_AUTOSIZE);
 		}
 	}
-
-
-
-
 
 };
 

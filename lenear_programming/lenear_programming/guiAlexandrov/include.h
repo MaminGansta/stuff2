@@ -35,6 +35,17 @@ void doutput(const char* format, ...)
 	va_end(args);
 }
 
+void doutput(const wchar_t* format, ...)
+{
+	wchar_t log[128];
+	va_list args;
+	va_start(args, format);
+	vswprintf_s(log, format, args);
+	OutputDebugStringW(log);
+	va_end(args);
+}
+
+
 #include "smallLib.cpp"
 
 #define STB_IMAGE_IMPLEMENTATION

@@ -120,6 +120,21 @@ struct Fraction
 		return Fraction(top * other, bottom);
 	}
 
+	bool operator== (int other)
+	{
+		return other * bottom == top;
+	}
+
+	bool operator!= (int other)
+	{
+		return other * bottom == top;
+	}
+
+	operator int()
+	{
+		return top;
+	}
+
 	// float
 	float operator* (float other)
 	{
@@ -145,19 +160,27 @@ struct Fraction
 
 
 // output for float and Fraction
+
+
 template <typename T>
-void output(wchar_t buffer[], T a, T b);
+void to_str(wchar_t buffer[], T a);
 
 template <>
-void output<float>(wchar_t buffer[], float a, float b)
+void to_str<int>(wchar_t buffer[], int a)
 {
-	swprintf_s(buffer, 32, L"X = (%.4f, %.4f)", a, b);
+	swprintf_s(buffer, 32, L"%d ", a);
 }
 
 template <>
-void output<Fraction>(wchar_t buffer[], Fraction a, Fraction b)
+void to_str<float>(wchar_t buffer[], float a)
 {
-	swprintf_s(buffer, 32, L"X = (%d/%d, %d/%d)", a.top, a.bottom, b.top, b.bottom);
+	swprintf_s(buffer, 32, L"%.1f ", a);
+}
+
+template <>
+void to_str<Fraction>(wchar_t buffer[], Fraction a)
+{
+	swprintf_s(buffer, 32, L"%d/%d ", a.top, a.bottom);
 }
 
 
@@ -170,11 +193,15 @@ struct Mat
 
 
 	Mat() : mat(nullptr), row(0), column(0) {}
-	Mat(size_t row, size_t column) : row(row), column(column) {
+	Mat(size_t row, size_t column) : row(row), column(column)
+	{
 		mat = new T[row * column];
+		for (int i = 0; i < column * row; i++)
+			mat[i] = T();
 	}
 
-	~Mat() {
+	~Mat()
+	{
 		delete[] mat;
 	}
 

@@ -54,19 +54,27 @@ struct Main_window : Window
 
 							if (window->cNumbers_type.choosed_index() == 0)
 							{
-								std::vector<float> target = window->text2float(target_text);
-								std::vector<float> basis = window->text2float(basis_text);
-								Mat<float> limits = window->vec2mat(window->text2float(limits_text), window->nVars, window->nLimits);
+								//std::vector<float> target = window->text2float(target_text);
+								//std::vector<float> basis = window->text2float(basis_text);
+								//Mat<float> limits = window->vec2mat(window->text2float(limits_text), window->nVars, window->nLimits);
+								std::vector<float> target{1, 1, 1, 0};
+								std::vector<float> basis{0, 1, 1};
+								Mat<float> limits(2, 4);
+								limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
+								limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
 
-								if (window->cMethod.choosed_index() == 0)
+								int type = window->cMethod.choosed_index();
+								if (type == 0)
 								{
 									if (window->nVars != 2) 
 										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
-								else
+								else if (type == 1)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
+								//else
+								// TODO: Add artifical basis if input empty
 							}
 							else
 							{
@@ -75,7 +83,8 @@ struct Main_window : Window
 								Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
 								
 								// graphic method
-								if (window->cMethod.choosed_index() == 0)
+								int type = window->cMethod.choosed_index();
+								if (type == 0)
 								{
 									if (window->nVars != 2)
 										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
@@ -83,8 +92,10 @@ struct Main_window : Window
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
 								// simplex method
-								else
+								else if (type == 1)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
+								//else
+								//	TODO: Add a.b too
 							}
 						}
 						// Button clear pushed
@@ -132,6 +143,8 @@ struct Main_window : Window
 		cMethod.init(getHWND(), 1, 0.05f, 0.1f, 0.15f, 0.05f, RESIZABLE, cStyle);
 		cMethod.add(L"graphic");
 		cMethod.add(L"simplex");
+		cMethod.add(L"artificial basis");
+
 		
 		
 		lMin_max.init(getHWND(), L"Type", 0, 0, 0.2f, 0.2f, 0.05f, RESIZABLE, lStyle);
@@ -145,7 +158,7 @@ struct Main_window : Window
 		set_font_size(lNumbers_type.handle, 25);
 		
 		cNumbers_type.init(getHWND(), 1, 0.05f, 0.4f, 0.15f, 0.05f, RESIZABLE, cStyle);
-		cNumbers_type.add(L"decimal");
+		cNumbers_type.add(L"floating point");
 		cNumbers_type.add(L"fraction");
 		
 		

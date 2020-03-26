@@ -1,3 +1,18 @@
+template <typename T>
+void output(wchar_t buffer[], T a, T b);
+
+template <>
+void output<float>(wchar_t buffer[], float a, float b)
+{
+	swprintf_s(buffer, 32, L"X = (%.1f, %.1f)", a, b);
+}
+
+template <>
+void output<Fraction>(wchar_t buffer[], Fraction a, Fraction b)
+{
+	swprintf_s(buffer, 32, L"X = (%d/%d, %d/%d)", a.top, a.bottom, b.top, b.bottom);
+}
+
 
 template <typename T>
 struct Graph_window : Window
@@ -47,7 +62,6 @@ struct Graph_window : Window
 		swprintf_s(buffer, L"F* = %d", F);
 		lTarget.init(getHWND(), buffer, 0, 0.1f, 0.1f, 0.2f, 0.05f, RESIZABLE);
 
-		//swprintf_s(buffer, L"X = (%f, %d)", point[0], point[1]);
 		output(buffer, point[0], point[1]);
 		lPoint.init(getHWND(), buffer, 0, 0.1f, 0.15f, 0.2f, 0.05f, RESIZABLE);
 
@@ -57,20 +71,36 @@ struct Graph_window : Window
 	std::tuple<int, std::vector<T>> solve(std::vector<T>& target, Mat<T>& limits, int type)
 	{
 		std::vector<std::vector<T>> points;
-		points.push_back({ T{}, T{} });
+		//points.push_back({ T{}, T{} });
 
-		Mat<T> temp(2, limits.column);
-
+		// extend by adding axises
+		Mat<T> ex_limits(limits.row + 2, limits.column);
 		for (int i = 0; i < limits.row; i++)
+			for (int j = 0; j < limits.column; j++)
+				ex_limits[i][j] = limits[i][j];
+
+		// add ixises
+		ex_limits[limits.row][0] = 1;
+		ex_limits[limits.row][1] = 0;
+		ex_limits[limits.row][2] = 0;
+
+		ex_limits[limits.row + 1][0] = 0;
+		ex_limits[limits.row + 1][1] = 1;
+		ex_limits[limits.row + 1][2] = 0;
+
+
+		Mat<T> temp(2, ex_limits.column);
+
+		for (int i = 0; i < ex_limits.row; i++)
 		{
-			for (int j = i; j < limits.row; j++)
+			for (int j = i; j < ex_limits.row; j++)
 			{
 				if (i == j) continue;
 
 				for (int a = 0; a < temp.column; a++)
 				{
-					temp[0][a] = limits[i][a];
-					temp[1][a] = limits[j][a];
+					temp[0][a] = ex_limits[i][a];
+					temp[1][a] = ex_limits[j][a];
 				}
 
 				auto [flag, intersection] = gausian_method(temp);

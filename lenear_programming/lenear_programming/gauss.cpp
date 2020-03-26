@@ -1,23 +1,13 @@
 #include <tuple>
 
-// 200 iq move
-int myabs(int i)
-{
-	return abs(i);
-}
-
-float myabs(float f)
-{
-	return fabs(f);
-}
-
-Fraction myabs(Fraction fraction)
+Fraction abs(Fraction fraction)
 {
 	return Fraction(abs(fraction.top), abs(fraction.bottom));
 }
 
+
 template <typename T>
-std::tuple<int, std::vector<T>> gausian_method(Mat<T> mat)
+std::tuple<int, std::vector<T>> gausian_method(Mat<T>& mat)
 {
 	int columns = mat.column - 1;
 	std::vector<T> res(columns);
@@ -27,9 +17,9 @@ std::tuple<int, std::vector<T>> gausian_method(Mat<T> mat)
 	{
 		int pivot = row;
 		for (int i = row; i < mat.row; i++)
-			if (myabs(mat[pivot][column]) < myabs(mat[i][column])) pivot = i;
+			if (abs(mat[pivot][column]) < abs(mat[i][column])) pivot = i;
 
-		if (myabs(mat[pivot][column] + 0.0f) < 0.0001f) continue;
+		if (abs(mat[pivot][column] + 0.0f) < 0.0001f) continue;
 
 		for (int i = 0; i < mat.column; i++)
 			std::swap(mat[pivot][i], mat[row][i]);
@@ -41,12 +31,24 @@ std::tuple<int, std::vector<T>> gausian_method(Mat<T> mat)
 			if (i != row)
 			{
 				T c = mat[i][column] / mat[row][column];
-				for (int j = column; j <= mat.row; j++)
+				for (int j = column; j < mat.column; j++)
 					mat[i][j] -= mat[row][j] * c;
 			}
 		}
 		row++;
 	}
+
+	// normalize
+	for (int i = 0; i < mat.row; i++)
+	{
+		if (mat[i][i] > 1.0f)
+		{
+			T c = mat[i][i];
+			for (int j = 0; j < mat.column; j++)
+				mat[i][j] = mat[i][j] / c;
+		}
+	}
+
 
 	int flag = 1;
 
@@ -60,7 +62,7 @@ std::tuple<int, std::vector<T>> gausian_method(Mat<T> mat)
 		for (int j = 0; j < columns; ++j)
 			sum = sum + mat[i][j] * res[j];
 
-		if (myabs(sum - mat[i][columns]) > 0.0001f)
+		if (abs(sum - mat[i][columns]) > 0.0001f)
 		{
 			flag = 0;
 			break;
