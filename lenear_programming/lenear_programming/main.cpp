@@ -3,6 +3,7 @@
 #include "stuff.cpp"
 #include "gauss.cpp"
 #include "simplex_solution.cpp"
+#include "artificiant_basis_solution.cpp"
 #include "graphic_solution.cpp"
 #include "main_window.cpp"
 

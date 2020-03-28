@@ -17,6 +17,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include <cstdint>
 #include <cstdio>
+#include <wchar.h>
 
 #include <vector>
 #include <unordered_map>
@@ -65,7 +66,7 @@ HINSTANCE hInst;
 #include "thread_pool.cpp"
 thread_pool workers(MAX_THREADS);
 
-// gui laoyt
+// gui layout
 #include "canvas.cpp"
 #include "window.cpp"
 #include "image.cpp"

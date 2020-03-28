@@ -231,10 +231,11 @@ struct Mat
 {
 	T* mat;
 	size_t row, column;
+	size_t col_capacity;
 
 
-	Mat() : mat(nullptr), row(0), column(0) {}
-	Mat(size_t row, size_t column) : row(row), column(column)
+	Mat() : mat(nullptr), row(0), column(0), col_capacity(0) {}
+	Mat(size_t row, size_t column) : row(row), column(column), col_capacity(column)
 	{
 		mat = new T[row * column];
 		for (int i = 0; i < column * row; i++)
@@ -250,8 +251,9 @@ struct Mat
 	{
 		row = other.row;
 		column = other.column;
-		mat = new T[row * column];
-		memmove(mat, other.mat, sizeof(T) * row * column);
+		col_capacity = other.col_capacity;
+		mat = new T[row * col_capacity];
+		memmove(mat, other.mat, sizeof(T) * row * col_capacity);
 	}
 	
 	Mat(Mat<T>&& other)
@@ -259,6 +261,8 @@ struct Mat
 		mat = other.mat;
 		row = other.row;
 		column = other.column;
+		col_capacity = other.col_capacity;
+
 		other.mat = nullptr;
 	}
 	
@@ -268,6 +272,8 @@ struct Mat
 		mat = other.mat;
 		row = other.row;
 		column = other.column;
+		col_capacity = other.col_capacity;
+
 		other.mat = nullptr;
 		return *this;
 	}
@@ -275,7 +281,7 @@ struct Mat
 	T* operator [] (size_t i)
 	{
 		assert(i < row);
-		return mat + i * column;
+		return mat + i * col_capacity;
 	}
 
 	

@@ -74,15 +74,15 @@ struct Main_window : Window
 								int type = window->cMethod.choosed_index();
 								if (type == 0)
 								{
-									if (window->nVars != 2) 
+									if (window->nVars != 2)
 										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
 								else if (type == 1)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
-								//else
-								// TODO: Add artifical basis if input empty
+								else
+									new  Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 							else
 							{
@@ -116,8 +116,8 @@ struct Main_window : Window
 								// simplex method
 								else if (type == 1)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
-								//else
-								//	TODO: Add a.b too
+								else
+									new  Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 						}
 						// Button clear pushed

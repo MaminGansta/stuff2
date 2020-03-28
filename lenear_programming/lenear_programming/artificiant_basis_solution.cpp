@@ -1,46 +1,5 @@
-﻿
-template<typename T>
-void mat_output(Mat<T>& mat)
-{
-	for (int i = 0; i < mat.row; i++)
-	{
-		for (int j = 0; j < mat.column; j++)
-		{
-			wchar_t buffer[32];
-			to_str(buffer, mat[i][j]);
-			doutput(L"%s", buffer);
-		}
-
-		doutput("\n");
-	}
-	doutput("\n");
-}
-
-
-struct pivot { int x, y; };
-
 template <typename T>
-struct Simplex_step
-{
-	int iteration = 0;
-
-	std::vector<pivot> pivots;
-
-	Mat<T> mat; // simplex mat
-
-	T* operator[] (int ind)
-	{
-		assert(ind < mat.row);
-		return mat[ind];
-	}
-
-	int cols() { return mat.column; }
-	int rows() { return mat.row; }
-};
-
-
-template <typename T>
-struct Simplex_window : Window
+struct Artificiant_basis_window : Window
 {
 	ListView table;
 	std::vector<Simplex_step<T>> steps;
@@ -52,27 +11,31 @@ struct Simplex_window : Window
 	Button bPriv;
 	Button bAuto;
 
-	Simplex_window(std::vector<T> target, std::vector<T>& basis, Mat<T>& limits, int type)
+	// amount of variables at the start
+	int vars = 0;
+
+	Artificiant_basis_window(std::vector<T> target, std::vector<T>& basis, Mat<T>& limits, int type)
 	{
-		init(L"simplex method", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
+		init(L"artificiant basis", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
 			{
-				Simplex_window* window = (Simplex_window*)args[0];
+				Artificiant_basis_window* window = (Artificiant_basis_window*)args[0];
 
 				switch (msg)
 				{
-					case WM_COMMAND:
-					{
-						if (LOWORD(wParam) == window->bNext.id)
-							window->make_step();
-						else if (LOWORD(wParam) == window->bPriv.id)
-							window->remove_step();
-						else if (LOWORD(wParam) == window->bAuto.id)
-							window->auto_end();
-					}return 0;
-					case WM_CLOSE:
-					{
-						safe_release(window);
-					}return 0;
+				case WM_COMMAND:
+				{
+					if (LOWORD(wParam) == window->bNext.id)
+						window->make_step();
+					else if (LOWORD(wParam) == window->bPriv.id)
+						window->remove_step();
+					else if (LOWORD(wParam) == window->bAuto.id)
+						window->auto_end();
+
+				}return 0;
+				case WM_CLOSE:
+				{
+					safe_release(window);
+				}return 0;
 				}
 
 				return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -107,80 +70,43 @@ struct Simplex_window : Window
 			// TODO: Call the artificiant basis problem solver
 		}
 
-
+		vars = limits.column-1;
 		Simplex_zero_step(target, basis, limits);
 	}
 
 
 	// ======== Layout ==========
-	
+
 	// Prepare Simplex table from input params
 	void Simplex_zero_step(std::vector<T>& target, std::vector<T>& basis, Mat<T> limits)
 	{
 		Simplex_step<T> first_step;
-		Mat<T> simplex_mat(limits.row + 2, limits.column - limits.row + 1);
+		Mat<T> simplex_mat(limits.row + 2, limits.column + 1);
 
-		std::vector<int> indices(limits.column - 1); // limits indices (x1, x2 ...)
-		for (int i = 0; i < indices.size(); i++)
-			indices[i] = i;
-
-		// TODO: add exception handle => Basis's vectors amount must be equal limits amount
-
-		int basis_num = 0;
-		for (int i = 0; i < basis.size(); i++)
-		{
-			if (basis[i] != 0)
-				change_colums(limits, indices, basis_num++, i);
-		}
-
-		Mat<T> temp = limits;
-		//auto [flag, res] = gausian_method(temp);
-		gausian_method(temp);
-
-		mat_output(temp);
-
-		//make simplex mat
+		// put coefs into the simplex table
 		for (int i = 0; i < limits.row; i++)
-			simplex_mat[i + 1][0] = indices[i];
+			for (int j = 0; j < limits.column; j++)
+				simplex_mat[i+1][j+1] = limits[i][j];
 
-		mat_output(simplex_mat);
+		// free
+		for (int i = 0; i < limits.column - 1; i++)
+			simplex_mat[0][i + 1] = i;
 
-		for (int i = 0; i < indices.size() - limits.row; i++)
-			simplex_mat[0][i + 1] = indices[limits.row + i];
-
-		mat_output(simplex_mat);
-
-
-		for (int i = 0; i < temp.row; i++)
-			for (int j = 0; j < temp.column - temp.row; j++)
-				simplex_mat[i + 1][j + 1] = temp[i][j + temp.row];
-
-		mat_output(simplex_mat);
-
-		// calculate target coefs in simplex table
-		std::vector<int> coefs(limits.row);
+		// basis
 		for (int i = 0; i < limits.row; i++)
-			coefs[i] = target[simplex_mat[1 + i][0]];
-
-		for (int i = 1; i < simplex_mat.column - 1; i++)
-		{
-			T target_coef = T();
-			for (int j = 1; j < simplex_mat.row -1; j++)
-				target_coef -= simplex_mat[j][i] * coefs[j-1];
-			
-			simplex_mat[simplex_mat.row - 1][i] = target_coef + target[simplex_mat[0][i]];
-		}
+			simplex_mat[i + 1][0] = limits.column + i - 1;
 
 		mat_output(simplex_mat);
 
-
-		// calculate target value in simplex table
-		T c = T();
-		for (int i = 1; i < simplex_mat.row - 1; i++)
+		// add target line
+		for (int i = 1; i < simplex_mat.column; i++)
 		{
-			c += simplex_mat[i][simplex_mat.column - 1] * target[simplex_mat[0][i]];
+			T c = T();
+			for (int j = 1; j < simplex_mat.row - 1; j++)
+				c -= simplex_mat[j][i];
+
+			simplex_mat[simplex_mat.row-1][i] = c;
 		}
-		simplex_mat[simplex_mat.row - 1][simplex_mat.column - 1] = -(c + target[target.size() - 1]);
 
 		mat_output(simplex_mat);
 
@@ -226,7 +152,7 @@ struct Simplex_window : Window
 			if (x != -1)
 				step.pivots.push_back({ x, y });
 		}
-		
+
 	}
 
 	// Make a simplex step from last state
@@ -261,7 +187,7 @@ struct Simplex_window : Window
 		for (int i = 1; i < step.rows(); i++)
 		{
 			if (coord.y == i) continue;
-			
+
 			T coef = priv_step[i][coord.x];
 			for (int j = 1; j < step.cols(); j++)
 			{
@@ -271,8 +197,23 @@ struct Simplex_window : Window
 		}
 
 		mat_output(step.mat);
-		
-		
+
+
+		// delete column if it's artificial
+		for (int i = 1; i < step.cols(); i++)
+		{
+			if (step[0][i] >= vars)
+			{
+				for (int a = i; a < step.cols() - 1; a++)
+					for (int b = 0; b < step.rows(); b++)
+						step[b][a] = step[b][a + 1];
+				step.mat.column--;
+				break;
+			}
+		}
+
+		mat_output(step.mat);
+
 		find_pivots(step);
 		steps.push_back(step);
 
@@ -284,7 +225,7 @@ struct Simplex_window : Window
 	void remove_step()
 	{
 		if (steps.size() == 1) return;
-		steps.erase(steps.end()-1);
+		steps.erase(steps.end() - 1);
 		table.clear();
 		dump_steps();
 	}
@@ -302,7 +243,7 @@ struct Simplex_window : Window
 	void dump_steps()
 	{
 		wchar_t buffer[32];
-		
+
 		for (Simplex_step<T>& step : steps)
 		{
 			mat_output(step.mat);
