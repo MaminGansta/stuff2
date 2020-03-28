@@ -43,6 +43,12 @@ struct Fraction
 		top /= g;
 		bottom /= g;
 
+		if (bottom < 0)
+		{
+			top = -top;
+			bottom = -bottom;
+		}
+
 		return *this;
 	}
 	Fraction& operator+= (const Fraction& f)
@@ -57,6 +63,12 @@ struct Fraction
 		top /= g;
 		bottom /= g;
 
+		if (bottom < 0)
+		{
+			top = -top;
+			bottom = -bottom;
+		}
+
 		return *this;
 	}
 
@@ -69,7 +81,14 @@ struct Fraction
 		int temp_bottom = l;
 
 		int g = gcd(temp_top, temp_bottom);
-		return Fraction(temp_top / g, temp_bottom / g);
+		
+		Fraction res(temp_top / g, temp_bottom / g);
+		if (res.bottom < 0)
+		{
+			res.top = -res.top;
+			res.bottom = -res.bottom;
+		}
+		return res;
 	}
 
 	Fraction operator- (Fraction f)
@@ -81,7 +100,13 @@ struct Fraction
 		int temp_bottom = l;
 
 		int g = gcd(temp_top, temp_bottom);
-		return Fraction(temp_top / g, temp_bottom / g);
+		Fraction res(temp_top / g, temp_bottom / g);
+		if (res.bottom < 0)
+		{
+			res.top = -res.top;
+			res.bottom = -res.bottom;
+		}
+		return res;
 	}
 
 
@@ -96,12 +121,18 @@ struct Fraction
 		int temp_bottom = bottom * other.top;
 
 		int g = gcd(temp_top, temp_bottom);
-		return Fraction(temp_top / g, temp_bottom / g);
+		Fraction f(temp_top / g, temp_bottom / g);
+		if (f.bottom < 0)
+		{
+			f.top = -f.top;
+			f.bottom = -f.bottom;
+		}
+		return f;
 	}
 
 	Fraction operator-()
 	{
-		return Fraction(-top, -bottom);
+		return Fraction(-top, bottom);
 	}
 
 	bool operator< (Fraction f)
@@ -125,9 +156,19 @@ struct Fraction
 		return other * bottom == top;
 	}
 
+	bool operator< (int other)
+	{
+		return top < other * bottom;
+	}
+
+	bool operator> (int other)
+	{
+		return  top > other * bottom;
+	}
+
 	bool operator!= (int other)
 	{
-		return other * bottom == top;
+		return other * bottom != top;
 	}
 
 	operator int()
@@ -161,7 +202,6 @@ struct Fraction
 
 // output for float and Fraction
 
-
 template <typename T>
 void to_str(wchar_t buffer[], T a);
 
@@ -184,6 +224,7 @@ void to_str<Fraction>(wchar_t buffer[], Fraction a)
 }
 
 
+// ============== Matrix ===================
 
 template <typename T>
 struct Mat

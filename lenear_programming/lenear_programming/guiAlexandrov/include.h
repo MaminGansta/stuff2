@@ -12,6 +12,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #include <Windows.h>
 #include <CommCtrl.h>
+#include <windowsx.h>
+
 
 #include <cstdint>
 #include <cstdio>
@@ -56,7 +58,7 @@ void doutput(const wchar_t* format, ...)
 HINSTANCE hInst;
 
 #ifndef MAX_THREADS
-#define MAX_THREADS 8
+#define MAX_THREADS 2
 #endif
 
 // unity build

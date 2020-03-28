@@ -601,6 +601,8 @@ struct ComboBox : Component
 		int count = SendMessage(handle, CB_GETCOUNT, (WPARAM)0, (LPARAM)0);
 		for (int i = 0; i < count; i++)
 			SendMessage(handle, CB_DELETESTRING, (WPARAM)0, (LPARAM)0);
+
+		ComboBox_SetText(handle, L"");
 	}
 
 };
@@ -1019,6 +1021,41 @@ struct ListView : Component
 		}
 	}
 
+	void space(int i = 0)
+	{
+		wchar_t buffer[] = L" ";
+		
+		for (int j = 1; j < i; j++)
+		{
+			int iLastIndex = ListView_GetItemCount(handle);
+
+			LVITEM lvi;
+			lvi.mask = LVIF_TEXT;
+			lvi.cchTextMax = 10;
+			lvi.iItem = iLastIndex;
+			lvi.pszText = (LPWSTR)buffer;
+			lvi.iSubItem = 0;
+
+			if (ListView_InsertItem(handle, &lvi) != -1)
+				ListView_SetItemText(handle, iLastIndex, j, (LPWSTR)buffer);
+		}
+
+	}
+
+	void clear()
+	{
+		ListView_DeleteAllItems(handle);
+	}
+
+	void remove_row(int i)
+	{
+		ListView_DeleteItem(handle, i);
+	}
+
+	int rows()
+	{
+		return ListView_GetItemCount(handle);
+	}
 };
 
 

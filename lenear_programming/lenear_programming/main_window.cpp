@@ -57,11 +57,19 @@ struct Main_window : Window
 								//std::vector<float> target = window->text2float(target_text);
 								//std::vector<float> basis = window->text2float(basis_text);
 								//Mat<float> limits = window->vec2mat(window->text2float(limits_text), window->nVars, window->nLimits);
-								std::vector<float> target{1, 1, 1, 0};
-								std::vector<float> basis{0, 1, 1};
-								Mat<float> limits(2, 4);
-								limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
-								limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
+
+								//std::vector<float> target{1, 1, 1, 0};
+								//std::vector<float> basis{0, 1, 1};
+								//Mat<float> limits(2, 4);
+								//limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
+								//limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
+
+								std::vector<float> target{-2, -1, -3, -1};
+								std::vector<float> basis{0, 0, 1, 1};
+								Mat<float> limits(2, 5);
+								limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
+								limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
+
 
 								int type = window->cMethod.choosed_index();
 								if (type == 0)
@@ -78,9 +86,23 @@ struct Main_window : Window
 							}
 							else
 							{
-								std::vector<Fraction> target = window->text2fraction(target_text);
-								std::vector<Fraction> basis = window->text2fraction(basis_text);
-								Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
+								//std::vector<Fraction> target = window->text2fraction(target_text);
+								//std::vector<Fraction> basis = window->text2fraction(basis_text);
+								//Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
+
+								//std::vector<Fraction> target{ 1, 1, 1, 0 };
+								//std::vector<Fraction> basis{ 0, 1, 1 };
+								//Mat<Fraction> limits(2, 4);
+								//limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
+								//limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
+
+								std::vector<Fraction> target{ -2, -1, -3, -1 };
+								std::vector<Fraction> basis{ 0, 0, 1, 1 };
+								Mat<Fraction> limits(2, 5);
+								limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
+								limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
+
+
 								
 								// graphic method
 								int type = window->cMethod.choosed_index();
