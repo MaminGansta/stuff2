@@ -48,15 +48,29 @@ struct Main_window : Window
 					{
 						if (LOWORD(wParam) == BTN_SOLVE)
 						{
+							if (window->nVars < 2)
+							{
+								MessageBox(window->getHWND(), L"Few variables", L"Message", MB_OK);
+								break;
+							}
+
+							if (window->nLimits < 1)
+							{
+								MessageBox(window->getHWND(), L"Few limits", L"Message", MB_OK);
+								break;
+							}
+
+
 							std::vector<TCHAR*> limits_text = window->limits.get_data();
 							std::vector<TCHAR*> basis_text = window->basis.get_data();
 							std::vector<TCHAR*> target_text = window->target.get_data();
 
+							
 							if (window->cNumbers_type.choosed_index() == 0)
 							{
-								//std::vector<float> target = window->text2float(target_text);
-								//std::vector<float> basis = window->text2float(basis_text);
-								//Mat<float> limits = window->vec2mat(window->text2float(limits_text), window->nVars, window->nLimits);
+								std::vector<float> target = window->text2float(target_text);
+								std::vector<float> basis = window->text2float(basis_text);
+								Mat<float> limits = window->vec2mat(window->text2float(limits_text), window->nVars, window->nLimits);
 
 								//std::vector<float> target{1, 1, 1, 0};
 								//std::vector<float> basis{0, 1, 1};
@@ -64,11 +78,19 @@ struct Main_window : Window
 								//limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
 								//limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
 
-								std::vector<float> target{-2, -1, -3, -1};
-								std::vector<float> basis{0, 0, 1, 1};
-								Mat<float> limits(2, 5);
-								limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
-								limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
+								//std::vector<float> target{-2, -1, -3, -1};
+								//std::vector<float> basis{0, 0, 1, 1};
+								//Mat<float> limits(2, 5);
+								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
+								//limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
+
+
+								//std::vector<float> target{-3, -2, 0};
+								//std::vector<float> basis{0, 0};
+								//Mat<float> limits(3, 3);
+								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 7;
+								//limits[1][0] = 2; limits[1][1] = 1; limits[1][2] = 8;
+								//limits[2][0] = 0; limits[2][1] = 1; limits[2][2] = 3;
 
 
 								int type = window->cMethod.choosed_index();
@@ -82,13 +104,13 @@ struct Main_window : Window
 								else if (type == 1)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
 								else
-									new  Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
+									new Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 							else
 							{
-								//std::vector<Fraction> target = window->text2fraction(target_text);
-								//std::vector<Fraction> basis = window->text2fraction(basis_text);
-								//Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
+								std::vector<Fraction> target = window->text2fraction(target_text);
+								std::vector<Fraction> basis = window->text2fraction(basis_text);
+								Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
 
 								//std::vector<Fraction> target{ 1, 1, 1, 0 };
 								//std::vector<Fraction> basis{ 0, 1, 1 };
@@ -96,20 +118,25 @@ struct Main_window : Window
 								//limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
 								//limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
 
-								std::vector<Fraction> target{ -2, -1, -3, -1 };
-								std::vector<Fraction> basis{ 0, 0, 1, 1 };
-								Mat<Fraction> limits(2, 5);
-								limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
-								limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
+								//std::vector<Fraction> target{ -2, -1, -3, -1 };
+								//std::vector<Fraction> basis{ 0, 0, 1, 1 };
+								//Mat<Fraction> limits(2, 5);
+								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
+								//limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
 
-
+								//std::vector<Fraction> target{ -3, -2, 0 };
+								//std::vector<Fraction> basis{ 0, 0 };
+								//Mat<Fraction> limits(3, 3);
+								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 7;
+								//limits[1][0] = 2; limits[1][1] = 1; limits[1][2] = 8;
+								//limits[2][0] = 0; limits[2][1] = 1; limits[2][2] = 3;
 								
 								// graphic method
 								int type = window->cMethod.choosed_index();
 								if (type == 0)
 								{
 									if (window->nVars != 2)
-										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
+										MessageBox(window->getHWND(), L"Problem can be solve only for two variables", L"Message", MB_OK);
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
@@ -117,7 +144,7 @@ struct Main_window : Window
 								else if (type == 1)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
 								else
-									new  Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
+									new Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 						}
 						// Button clear pushed

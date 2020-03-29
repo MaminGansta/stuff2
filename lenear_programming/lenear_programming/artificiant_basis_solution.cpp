@@ -138,19 +138,28 @@ struct Artificiant_basis_window : Window
 			if (step[target_row][i] > -0.001f) continue;
 
 			T min = MAXINT32;
-			int x = -1, y = -1;
+			std::vector<pivot> mins;
+
 			for (int j = 1; j < step.rows() - 1; j++)
 			{
 				T temp = step[j][step.cols() - 1] / step[j][i];
-				if (temp > 0 && temp <= min)
+				if (temp >= 0 && temp <= min && step[j][i] > 0)
 				{
+					if (min == temp)
+						mins.push_back({i, j});
+					else
+					{
+						mins.clear();
+						mins.push_back({ i, j });
+					}
+
 					min = temp;
-					x = i;
-					y = j;
 				}
+
+
 			}
-			if (x != -1)
-				step.pivots.push_back({ x, y });
+			for (int a = 0; a < mins.size(); a++)
+				step.pivots.push_back(mins[a]);
 		}
 
 	}
@@ -158,6 +167,7 @@ struct Artificiant_basis_window : Window
 	// Make a simplex step from last state
 	void make_step(bool auto_flag = false)
 	{
+		if (steps.size() == 0) return;
 		Simplex_step<T>& priv_step = steps.back();
 		Simplex_step<T> step = priv_step;
 		step.iteration++;
@@ -224,7 +234,7 @@ struct Artificiant_basis_window : Window
 
 	void remove_step()
 	{
-		if (steps.size() == 1) return;
+		if (steps.size() <= 1) return;
 		steps.erase(steps.end() - 1);
 		table.clear();
 		dump_steps();
@@ -232,6 +242,7 @@ struct Artificiant_basis_window : Window
 
 	void auto_end()
 	{
+		if (steps.size() < 1) return;
 		while (steps.back().pivots.size())
 			make_step(true);
 

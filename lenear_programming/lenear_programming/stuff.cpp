@@ -120,6 +120,13 @@ struct Fraction
 		int temp_top = top * other.bottom;
 		int temp_bottom = bottom * other.top;
 
+		if (temp_bottom == 0)
+		{
+			doutput("Fraction: zero division\n");
+			temp_bottom = 1;
+			temp_top = MAXINT32;
+		}
+
 		int g = gcd(temp_top, temp_bottom);
 		Fraction f(temp_top / g, temp_bottom / g);
 		if (f.bottom < 0)

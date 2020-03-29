@@ -25,7 +25,7 @@ struct Graph_window : Window
 
 	Graph_window(std::vector<T>& target, Mat<T>& limits, int type)
 	{
-		init(L"graphic methid", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
+		init(L"graphic method", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
 			{
 				Graph_window* window = (Graph_window*)args[0];
 
@@ -57,10 +57,14 @@ struct Graph_window : Window
 		set_min_max_size(800, 600);
 
 		auto [F, point] = solve(target, limits, type);
+		if (point.size() == 0) return;
 
 		wchar_t buffer[32];
-		swprintf_s(buffer, L"F* = %d", F);
-		lTarget.init(getHWND(), buffer, 0, 0.1f, 0.1f, 0.2f, 0.05f, RESIZABLE);
+		wchar_t F_buffer[32];
+
+		to_str(buffer, F);
+		swprintf_s(F_buffer, 32, L"F = %s", buffer);
+		lTarget.init(getHWND(), F_buffer, 0, 0.1f, 0.1f, 0.2f, 0.05f, RESIZABLE);
 
 		output(buffer, point[0], point[1]);
 		lPoint.init(getHWND(), buffer, 0, 0.1f, 0.15f, 0.2f, 0.05f, RESIZABLE);
@@ -68,10 +72,9 @@ struct Graph_window : Window
 		redraw();
 	}
 
-	std::tuple<int, std::vector<T>> solve(std::vector<T>& target, Mat<T>& limits, int type)
+	std::tuple<T, std::vector<T>> solve(std::vector<T>& target, Mat<T>& limits, int type)
 	{
 		std::vector<std::vector<T>> points;
-		//points.push_back({ T{}, T{} });
 
 		// extend by adding axises
 		Mat<T> ex_limits(limits.row + 2, limits.column);
@@ -89,6 +92,7 @@ struct Graph_window : Window
 		ex_limits[limits.row + 1][2] = 0;
 
 
+		// find points that lay on intersection
 		Mat<T> temp(2, ex_limits.column);
 
 		for (int i = 0; i < ex_limits.row; i++)
@@ -110,8 +114,34 @@ struct Graph_window : Window
 			}
 		}
 
+		// remove points that lay outside the limits
+		std::vector<std::vector<T>> new_points;
+		for (auto& point : points)
+		{
+			int i = 0;
+			for (; i < limits.row; i++)
+			{
+				T x0 = 0;
+				T y0 = limits[i][1] ? limits[i][2] / limits[i][1] : limits[i][2];
+				T x1 = 4;
+				T y1 = limits[i][1] ? (limits[i][2] - limits[i][0] * 4) / limits[i][1] * 4 : (limits[i][2] - limits[i][0] * 4);
+
+				// cross product
+				T dot = (x1 - x0) * (point[1] - y0) - (y1 - y0) * (point[0] - x0);
+				if (dot > 0.001f)
+					break;
+			}
+			if (i == limits.column)
+				new_points.push_back(point);
+		}
+		points = new_points;
+
+		if (points.size() == 0)
+			return {0, std::vector<T>()};
+
+		// find max value 
 		int idx = 0;
-		int F = target[0] * points[0][0] + target[1] * points[0][1] + target[2] + 0.0f;
+		T F = target[0] * points[0][0] + target[1] * points[0][1] + target[2] + 0.0f;
 
 		for (int i = 1; i < points.size(); i++)
 		{

@@ -2,6 +2,7 @@
 template<typename T>
 void mat_output(Mat<T>& mat)
 {
+#if _DEBUG
 	for (int i = 0; i < mat.row; i++)
 	{
 		for (int j = 0; j < mat.column; j++)
@@ -14,6 +15,7 @@ void mat_output(Mat<T>& mat)
 		doutput("\n");
 	}
 	doutput("\n");
+#endif
 }
 
 
@@ -51,6 +53,9 @@ struct Simplex_window : Window
 	Button bNext;
 	Button bPriv;
 	Button bAuto;
+
+	// amount of variables
+	int vars = 0;
 
 	Simplex_window(std::vector<T> target, std::vector<T>& basis, Mat<T>& limits, int type)
 	{
@@ -100,12 +105,15 @@ struct Simplex_window : Window
 				target[i] = -target[i];
 		}
 
+		vars = limits.column - 1;
+		
+		// amount of basis variables
+		int amount = 0;
 		for (int i = 0; i < basis.size(); i++)
-		{
-			if (basis[i] != 0) break;
-			if (i == basis.size() - 1);
-			// TODO: Call the artificiant basis problem solver
-		}
+			if (basis[i] > 0) amount++;
+
+		if (amount != limits.row)
+			calculate_basis(target, basis, limits);
 
 
 		Simplex_zero_step(target, basis, limits);
@@ -216,7 +224,7 @@ struct Simplex_window : Window
 			for (int j = 1; j < step.rows() - 1; j++)
 			{
 				T temp = step[j][step.cols() - 1] / step[j][i];
-				if (temp > 0 && temp <= min)
+				if (temp >= 0 && temp <= min && step[j][i] > 0)
 				{
 					min = temp;
 					x = i;
@@ -232,6 +240,7 @@ struct Simplex_window : Window
 	// Make a simplex step from last state
 	void make_step(bool auto_flag = false)
 	{
+		if (steps.size() == 0) return;
 		Simplex_step<T>& priv_step = steps.back();
 		Simplex_step<T> step = priv_step;
 		step.iteration++;
@@ -283,7 +292,7 @@ struct Simplex_window : Window
 
 	void remove_step()
 	{
-		if (steps.size() == 1) return;
+		if (steps.size() <= 1) return;
 		steps.erase(steps.end()-1);
 		table.clear();
 		dump_steps();
@@ -291,6 +300,7 @@ struct Simplex_window : Window
 
 	void auto_end()
 	{
+		if (steps.size() < 1) return;
 		while (steps.back().pivots.size())
 			make_step(true);
 
@@ -347,6 +357,128 @@ struct Simplex_window : Window
 			swprintf_s(buffer, L"(x - %d, y - %d)", p.x, p.y);
 			cPivot.add(buffer);
 		}
+	}
+
+
+	// ==================  if basis is zeroes lets calculate it =======================
+
+	void calculate_basis(std::vector<T>& target, std::vector<T>& basis, Mat<T>& limits)
+	{
+		Simplex_step<T> step = bSimplex_zero_step(target, basis, limits);
+
+		while (step.pivots.size() != 0)
+			step = bmake_step(step);
+
+		for (int i = 0; i < basis.size(); i++)
+			basis[i] = T();
+
+		for (int i = 1; i < step.rows() - 1; i++)
+		{
+			assert((int)step[i][0] < basis.size());
+			basis[(int)step[i][0]] = 1;
+		}
+	}
+
+
+	// Prepare Simplex table from input params
+	Simplex_step<T> bSimplex_zero_step(std::vector<T>& target, std::vector<T>& basis, Mat<T> limits)
+	{
+		Simplex_step<T> first_step;
+		Mat<T> simplex_mat(limits.row + 2, limits.column + 1);
+
+		// put coefs into the simplex table
+		for (int i = 0; i < limits.row; i++)
+			for (int j = 0; j < limits.column; j++)
+				simplex_mat[i + 1][j + 1] = limits[i][j];
+
+		// free
+		for (int i = 0; i < limits.column - 1; i++)
+			simplex_mat[0][i + 1] = i;
+
+		// basis
+		for (int i = 0; i < limits.row; i++)
+			simplex_mat[i + 1][0] = limits.column + i - 1;
+
+		mat_output(simplex_mat);
+
+		// add target line
+		for (int i = 1; i < simplex_mat.column; i++)
+		{
+			T c = T();
+			for (int j = 1; j < simplex_mat.row - 1; j++)
+				c -= simplex_mat[j][i];
+
+			simplex_mat[simplex_mat.row - 1][i] = c;
+		}
+
+		mat_output(simplex_mat);
+
+		// find pivot
+		first_step.mat = std::move(simplex_mat);
+		find_pivots(first_step);
+
+		mat_output(first_step.mat);
+
+		return first_step;
+	}
+
+
+	// Make a simplex step from last state
+	Simplex_step<T> bmake_step(Simplex_step<T>& priv_step)
+	{
+		Simplex_step<T> step = priv_step;
+		step.iteration++;
+		step.pivots.clear();
+
+		pivot coord = priv_step.pivots[0];
+		T piv = step[coord.y][coord.x];
+
+		// swap basis and free variables
+		std::swap(step[0][coord.x], step[coord.y][0]);
+
+		// flip the pivot
+		step[coord.y][coord.x] = 1 / step[coord.y][coord.x];
+
+		// divide by pivot
+		for (int i = 1; i < step.cols(); i++)
+			if (i != coord.x) step[coord.y][i] = step[coord.y][i] / piv;
+
+		// divide by -pivot
+		for (int i = 1; i < step.rows(); i++)
+			if (i != coord.y) step[i][coord.x] = -step[i][coord.x] / piv;
+
+		// substract rows with coef
+		for (int i = 1; i < step.rows(); i++)
+		{
+			if (coord.y == i) continue;
+
+			T coef = priv_step[i][coord.x];
+			for (int j = 1; j < step.cols(); j++)
+			{
+				if (j == coord.x) continue;
+				step[i][j] = step[i][j] - coef * step[coord.y][j];
+			}
+		}
+
+		mat_output(step.mat);
+
+		// delete column if it's artificial
+		for (int i = 1; i < step.cols(); i++)
+		{
+			if (step[0][i] >= vars)
+			{
+				for (int a = i; a < step.cols() - 1; a++)
+					for (int b = 0; b < step.rows(); b++)
+						step[b][a] = step[b][a + 1];
+				step.mat.column--;
+				break;
+			}
+		}
+
+		mat_output(step.mat);
+
+		find_pivots(step);
+		return step;
 	}
 
 };
