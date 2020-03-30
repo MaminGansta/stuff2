@@ -569,7 +569,11 @@ struct ComboBox : Component
 			SendMessage(handle, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)element.c_str());
 
 		SendMessage(handle, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+	}
 
+	void set_selected(int i)
+	{
+		ComboBox_SetCurSel(handle, i);
 	}
 
 	UINT choosed_index()
@@ -874,6 +878,11 @@ struct Table : Component
 				table[i * cols + j].show();
 			}
 		}
+	}
+
+	Text* operator[] (int i)
+	{
+		return table.data() + i * cols;
 	}
 
 	std::vector<TCHAR*> get_data()

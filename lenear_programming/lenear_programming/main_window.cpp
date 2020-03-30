@@ -1,3 +1,5 @@
+#include <filesystem>
+#include <ctime>
 
 struct Main_window : Window
 {
@@ -52,7 +54,7 @@ struct Main_window : Window
 						AppendMenu(hFileMenu, MF_STRING, 302, L"save");
 
 						AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFileMenu, L"File");
-						AppendMenu(hMenuBar, MF_STRING, 303, L"Help");
+						AppendMenu(hMenuBar, MF_STRING, 303, L"About");
 
 						SetMenu(hwnd, hMenuBar);
 					}break;
@@ -61,7 +63,7 @@ struct Main_window : Window
 						// menu
 						if (LOWORD(wParam) == 301)
 						{
-							window->open_file();
+							window->open();
 							break;
 						}
 
@@ -71,7 +73,13 @@ struct Main_window : Window
 							break;
 						}
 
-						// interface
+						if (LOWORD(wParam) == 303)
+						{
+							new About_window();
+							break;
+						}
+
+						// interface handle
 						if (LOWORD(wParam) == BTN_SOLVE)
 						{
 							if (window->nVars < 2)
@@ -365,9 +373,10 @@ struct Main_window : Window
 
 	// ========= File operations ==============
 
-	void open_file()
+	void open()
 	{
-		wchar_t file_name[100];
+		wchar_t file_name[128];
+		wchar_t buff[32];
 
 		OPENFILENAME ofn;
 		ZeroMemory(&ofn, sizeof(OPENFILENAME));
@@ -376,15 +385,122 @@ struct Main_window : Window
 		ofn.hwndOwner = getHWND();
 		ofn.lpstrFile = file_name;
 		file_name[0] = L'\0';
-		ofn.nMaxFile = 100;
+		ofn.nMaxFile = 128;
 		ofn.lpstrFilter = L"All Files\0*.*txt\0";
 		ofn.nFilterIndex = 1;
 
 		GetOpenFileName(&ofn);
-		if (wcsnlen_s(file_name, 100) == 0)	return;
+		if (wcsnlen_s(file_name, 128) == 0)	return;
 
-		MessageBox(NULL, ofn.lpstrFile, L"", MB_OK);
+		//MessageBox(NULL, ofn.lpstrFile, L"", MB_OK);
 
+		int file_size;
+		wchar_t* data = open_file(file_name, file_size);
+		if (data == NULL) return;
+
+		int method, 
+			problem_type,
+			number_type, 
+			vars, lims;
+		
+		int seek = 0, temp;
+		swscanf_s(data, L"%d%n", &method, &temp);
+		seek += temp;
+		swscanf_s(data + seek, L"%d%n", &problem_type, &temp);
+		seek += temp;
+		swscanf_s(data + seek, L"%d%n", &number_type, &temp);
+		seek += temp;
+
+		swscanf_s(data + seek, L"%d%n", &vars, &temp);
+		seek += temp;
+		swscanf_s(data + seek, L"%d%n", &lims, &temp);
+		seek += temp;
+		
+		// set program params 
+		cMethod.set_selected(method);
+		cMin_max.set_selected(problem_type);
+		cNumbers_type.set_selected(number_type);
+		
+		to_str(buff, vars);
+		tVars.SetText(buff);
+		to_str(buff, lims);
+		tLimits.SetText(buff);
+		nVars = vars;
+		nLimits = lims;
+
+
+		show_fields(vars, lims);
+
+		if (number_type == 0)
+		{
+			float in = 0.0f;
+			
+			// parse target float
+			for (int i = 0; i < vars + 1; i++)
+			{
+				swscanf_s(data + seek, L"%f%n", &in, &temp);
+				seek += temp;
+				to_str(buff, in);
+				target[0][i].SetText(buff);
+			}
+
+			// parse limits
+			for (int i = 0; i < lims; i++)
+			{
+				for (int j = 0; j < vars + 1; j++)
+				{
+					swscanf_s(data + seek, L"%f%n", &in, &temp);
+					seek += temp;
+					to_str(buff, in);
+					limits[i][j].SetText(buff);
+				}
+			}
+
+			// parse basis
+			for (int i = 0; i < vars; i++)
+			{
+				swscanf_s(data + seek, L"%f%n", &in, &temp);
+				seek += temp;
+				to_str(buff, in);
+				basis[0][i].SetText(buff);
+			}
+		}
+		else
+		{
+			Fraction in;
+
+			// parse target float
+			for (int i = 0; i < vars; i++)
+			{
+				swscanf_s(data + seek, L"%d/%d%n", &in.top, &in.bottom, &temp);
+				seek += temp;
+				to_str(buff, in);
+				target[0][i].SetText(buff);
+			}
+
+			// parse limits
+			for (int i = 0; i < lims; i++)
+			{
+				for (int j = 0; j < vars; j++)
+				{
+					swscanf_s(data + seek, L"%d/%d%n", &in.top, &in.bottom, &temp);
+					seek += temp;
+					to_str(buff, in);
+					limits[i][j].SetText(buff);
+				}
+			}
+
+			// parse basis
+			for (int i = 0; i < vars; i++)
+			{
+				swscanf_s(data + seek, L"%d/%d%n", &in.top, &in.bottom, &temp);
+				seek += temp;
+				to_str(buff, in);
+				basis[0][i].SetText(buff);
+			}
+		}
+
+		delete[] data;
 	}
 
 
@@ -392,7 +508,7 @@ struct Main_window : Window
 	{
 		if (nVars < 1 || nLimits < 1) return;
 
-		wchar_t buffer[256];
+		wchar_t buffer[512];
 		int ind = 0;
 
 		ind += swprintf_s(buffer, L"%d\n", cMethod.choosed_index());
@@ -461,10 +577,18 @@ struct Main_window : Window
 			// basis
 			for (int i = 0; i < nVars; i++)
 				ind += swprintf_s(buffer + ind, 10, L"%d/%d ", basis[i].top, basis[i].bottom);
-
-
 		}
-		
-		write_file(L"test.txt", buffer, ind);
+
+
+		// get current time for name 
+		time_t rawtime;
+		tm timeinfo;
+		wchar_t time_buffer[64];
+		time(&rawtime);
+		localtime_s(&timeinfo, &rawtime);
+		wcsftime(time_buffer, sizeof(time_buffer), L"%d-%m-%Y %H_%M_%S", &timeinfo);
+		wcscat_s(time_buffer, L".txt");
+
+		write_file(time_buffer, buffer, ind);
 	}
 };
