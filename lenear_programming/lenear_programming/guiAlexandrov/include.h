@@ -14,10 +14,10 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <CommCtrl.h>
 #include <windowsx.h>
 
-
 #include <cstdint>
 #include <cstdio>
 #include <wchar.h>
+#include <tchar.h>
 
 #include <vector>
 #include <unordered_map>
@@ -79,6 +79,7 @@ thread_pool workers(MAX_THREADS);
 #include "input.cpp"
 #include "timer.cpp"
 #include "time.cpp"
+#include "io.cpp"
 
 
 

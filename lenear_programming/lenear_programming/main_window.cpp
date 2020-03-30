@@ -1,5 +1,4 @@
 
-
 struct Main_window : Window
 {
 	Label lMethod;
@@ -44,8 +43,35 @@ struct Main_window : Window
 
 				switch (msg)
 				{
+					case WM_CREATE:
+					{
+						HMENU hMenuBar = CreateMenu();
+						HMENU hFileMenu = CreateMenu();
+
+						AppendMenu(hFileMenu, MF_STRING, 301, L"open");
+						AppendMenu(hFileMenu, MF_STRING, 302, L"save");
+
+						AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFileMenu, L"File");
+						AppendMenu(hMenuBar, MF_STRING, 303, L"Help");
+
+						SetMenu(hwnd, hMenuBar);
+					}break;
 					case WM_COMMAND:
 					{
+						// menu
+						if (LOWORD(wParam) == 301)
+						{
+							window->open_file();
+							break;
+						}
+
+						if (LOWORD(wParam) == 302)
+						{
+							window->save_to_file();
+							break;
+						}
+
+						// interface
 						if (LOWORD(wParam) == BTN_SOLVE)
 						{
 							if (window->nVars < 2)
@@ -59,7 +85,6 @@ struct Main_window : Window
 								MessageBox(window->getHWND(), L"Few limits", L"Message", MB_OK);
 								break;
 							}
-
 
 							std::vector<TCHAR*> limits_text = window->limits.get_data();
 							std::vector<TCHAR*> basis_text = window->basis.get_data();
@@ -336,4 +361,110 @@ struct Main_window : Window
 		return mat;
 	}
 
+
+
+	// ========= File operations ==============
+
+	void open_file()
+	{
+		wchar_t file_name[100];
+
+		OPENFILENAME ofn;
+		ZeroMemory(&ofn, sizeof(OPENFILENAME));
+
+		ofn.lStructSize= sizeof(OPENFILENAME);
+		ofn.hwndOwner = getHWND();
+		ofn.lpstrFile = file_name;
+		file_name[0] = L'\0';
+		ofn.nMaxFile = 100;
+		ofn.lpstrFilter = L"All Files\0*.*txt\0";
+		ofn.nFilterIndex = 1;
+
+		GetOpenFileName(&ofn);
+		if (wcsnlen_s(file_name, 100) == 0)	return;
+
+		MessageBox(NULL, ofn.lpstrFile, L"", MB_OK);
+
+	}
+
+
+	void save_to_file()
+	{
+		if (nVars < 1 || nLimits < 1) return;
+
+		wchar_t buffer[256];
+		int ind = 0;
+
+		ind += swprintf_s(buffer, L"%d\n", cMethod.choosed_index());
+		ind += swprintf_s(buffer + ind, 5, L"%d\n", cMin_max.choosed_index());
+		ind += swprintf_s(buffer + ind, 5, L"%d\n", cNumbers_type.choosed_index());
+
+		ind += swprintf_s(buffer + ind, 5, L"%d\n", nVars);
+		ind += swprintf_s(buffer + ind, 5, L"%d\n", nLimits);
+
+
+		std::vector<TCHAR*> limits_text = limits.get_data();
+		std::vector<TCHAR*> basis_text = basis.get_data();
+		std::vector<TCHAR*> target_text = target.get_data();
+
+		if (cNumbers_type.choosed_index() == 0)
+		{
+			std::vector<float> target = text2float(target_text);
+			std::vector<float> basis = text2float(basis_text);
+			std::vector<float> limits = text2float(limits_text);
+			
+			// write target funtion for float
+			for (int i = 0; i < nVars + 1; i++)
+				ind += swprintf_s(buffer + ind, 10, L"%0.1f ", target[i]);
+
+			// some gaps
+			ind += swprintf_s(buffer + ind, 3, L"\n\n");
+
+			// limits
+			for (int i = 0; i < nLimits; i++)
+			{
+				for (int j = 0; j < nVars + 1; j++)
+					ind += swprintf_s(buffer + ind, 10, L"%0.1f ", limits[i * (nVars + 1) + j]);
+				ind += swprintf_s(buffer + ind, 3, L"\n");
+			}
+
+			ind += swprintf_s(buffer + ind, 3, L"\n");
+
+			// basis
+			for (int i = 0; i < nVars; i++)
+				ind += swprintf_s(buffer + ind, 10, L"%0.1f ", basis[i]);
+
+		}
+		else
+		{
+			std::vector<Fraction> target = text2fraction(target_text);
+			std::vector<Fraction> basis = text2fraction(basis_text);
+			std::vector<Fraction> limits = text2fraction(limits_text);
+
+			// write target funtion for Fraction
+			for (int i = 0; i < nVars + 1; i++)
+				ind += swprintf_s(buffer + ind, 10, L"%d/%d ", target[i].top, target[i].bottom);
+
+			// some gaps
+			ind += swprintf_s(buffer + ind, 3, L"\n\n");
+
+			// limits
+			for (int i = 0; i < nLimits; i++)
+			{
+				for (int j = 0; j < nVars + 1; j++)
+					ind += swprintf_s(buffer + ind, 10, L"%d/%d ", limits[i * (nVars + 1) + j].top, limits[i * (nVars + 1) + j].bottom);
+				ind += swprintf_s(buffer + ind, 3, L"\n");
+			}
+
+			ind += swprintf_s(buffer + ind, 3, L"\n");
+
+			// basis
+			for (int i = 0; i < nVars; i++)
+				ind += swprintf_s(buffer + ind, 10, L"%d/%d ", basis[i].top, basis[i].bottom);
+
+
+		}
+		
+		write_file(L"test.txt", buffer, ind);
+	}
 };
