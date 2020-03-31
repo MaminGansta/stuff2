@@ -32,11 +32,11 @@ struct About_window : Window
 			"Button next and privius make or remove one step of algorithm. This method ignore basis input fieds\n\n"
 			""
 			"2) Simplex method\n"
-			"The same with the privius one but here is posible to set basis\n"
-			"if basis is zeroes or incorect it will be calculated automaticly\n\n"
+			"The same with the privius one but here is posible to set basis.\n"
+			"If basis is zeroes or incorect it will be calculated automaticly by A.B.\n\n"
 			""
 			"3) Also\n"
-			"   1)Empty field are zoroes"
+			"   1)Empty fields are zoroes"
 			""
 			"", 0, 0.0f, 0.0f, 1.0f, 1.0f, RESIZABLE);
 
