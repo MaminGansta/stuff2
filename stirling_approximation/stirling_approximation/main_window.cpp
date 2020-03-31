@@ -10,7 +10,7 @@ struct Params
 	double delata;
 };
 
-fImage make_grafic(Params p)
+fImage make_graph(Params p)
 {
 	if (p.alpha == 0) p.alpha = 1;
 	if (p.betta == 0) p.betta = 1;
@@ -22,31 +22,33 @@ fImage make_grafic(Params p)
 	if (p.C == 0) p.C = -10;
 	if (p.D == 0) p.D = 10;
 
-	//if (p.nodes == 0)
-	//	p.nodes = 3;
 
-	int width = 1600, height = 600 * 1.4f;
-	fImage grafic(width, height);
 
-	int grafic_w = p.B - p.A;
-	int grafic_h = p.D - p.C;
+	int width = 1600;
+	int height = 800;
 
-	double x_coef = double(grafic_w) / width;
-	double y_coef = double(grafic_h) / (height / 2);
+	int graph_w = p.B - p.A;
+	int graph_h = p.D - p.C;
+
+	double x_coef = (double)graph_w / width;
+	double y_coef = (double)graph_h / (height / 2);
+
+	fImage graph(width, height);
+
 
 	// step
-	double h = double(grafic_w) / (p.nodes * 2 + 1);
+	double h = double(graph_w) / (p.nodes * 2 + 1);
 
 	// clear graph area
-	draw_filled_rect(grafic, 0, 0, 1.0f, 1.0f, fColor(0));
+	draw_filled_rect(graph, 0, 0, 1.0f, 1.0f, fColor(0));
 
 	// draw y axis
 	if (p.A < 0 && p.B > 0)
 	{
 		for (int y = 0; y < height; y++)
 		{
-			drawPixel(grafic, width * (double(abs(p.A) / grafic_w)), y, fColor(1.0f));
-			drawPixel(grafic, width * (double(abs(p.A) / grafic_w)) + 1, y, fColor(1.0f));
+			drawPixel(graph, width * (double(abs(p.A) / graph_w)), y, fColor(1.0f));
+			drawPixel(graph, width * (double(abs(p.A) / graph_w)) + 1, y, fColor(1.0f));
 		}
 	}
 
@@ -55,90 +57,69 @@ fImage make_grafic(Params p)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			drawPixel(grafic, x, height * (double(abs(p.C) / grafic_h)), fColor(1.0f));
-			drawPixel(grafic, x, height * (double(abs(p.C) / grafic_h)) + 1, fColor(1.0f));
+			drawPixel(graph, x, height * (double(abs(p.C) / graph_h)), fColor(1.0f));
+			drawPixel(graph, x, height * (double(abs(p.C) / graph_h)) + 1, fColor(1.0f));
 		}
 	}
 
-	// draw original function
+
 	for (int x = 0; x < width; x++)
 	{
 		double xx = x * x_coef + p.A;
-		double y =  p.alpha * sinf(tanf(p.betta * xx)) + p.epsilon * cosf(p.gamma * xx);
-		if (y < p.C || y > p.D) continue;
-		y = y / y_coef + height / 2;
+		double y = p.alpha * sinf(tanf(p.betta * xx)) + p.epsilon * cosf(p.gamma * xx);
 
-		for (int i = -2; i < 2; i++)
-			for (int j = -3; j < 3; j++)              // kek smooth)))))    wtf
-				addPixel(grafic, x + i, y + j, fColor( 1.0 / (1 + i*i + j*j)) );
-	}
-
-
-	if (p.nodes == 0) return grafic;
-
-
-	////===== build stirling polinom =====
-	//// calculate delta y table
-	std::vector<std::vector<double>> table_delta_y(p.nodes+1, std::vector<double>());
-	
-	
-	for (int i = 0; i <= p.nodes; i++)
-		table_delta_y[0].push_back(p.alpha * sinf(tanf(p.betta * (p.A + h*i))) + p.epsilon * cosf(p.gamma * (p.A + h * i)));
-	
-	
-	for (int i = 1; i <= p.nodes; i++)
-		for (int j = 0; j <= p.nodes - i; j++)
-			table_delta_y[i].push_back(table_delta_y[i - 1][j+1] - table_delta_y[i - 1][j]);
-	
-	
-	// prepare coeficients
-	std::vector<double> coefs(p.nodes + 1);
-	
-	int n = 1;
-	for (int i = 0; i < coefs.size(); i++)
-	{
-		n *= i ? i : 1;
-		std::vector<double>& delta_y = table_delta_y[i];
-		int center = delta_y.size() / 2;
-		
-		if (delta_y.size() & 1)
-			coefs[i] = delta_y[center] / n;
-		else
-			coefs[i] = (delta_y[center] + delta_y[center - 1]) / 2 / n;
-	}
-	
-	// draw graph
-	double x0 = double(p.B - p.A) / 2.0;
-	//double x0 = 0.35f;
-	
-	for (int x = 0; x < width - 1; x++)
-	{
-		double y = 0;
-		double q = ((p.A + x * x_coef) - x0) / h;
-
-		double priv_step = q;
-		for (int i = 0; i < coefs.size(); i++)
-		{
-			double a = 1.0;
-
-			for (int j = -i; j <= i; j++)
-				a *= q + j;
-
-			if (i & 1 == 0)
-				a *= q;
-
-			y += coefs[i] * a;
-		}
-
-		//if (y < p.C || y > p.D) continue;
 		y = y / y_coef + height / 2;
 
 		for (int i = -2; i < 2; i++)
 			for (int j = -3; j < 3; j++)
-				drawPixel(grafic, x + i, y + j, fColor(1.0f, 0.0f, 0.0f));
+				addPixel(graph, x + i, y + j, fColor(1.0 / (1 + i * i + j * j)));
 	}
 
-	return grafic;
+	if (p.nodes == 0)
+		return graph;
+
+	// delata y
+	std::vector<std::vector<double>> dy(p.nodes * 2 + 2);
+
+	for (int i = 0; i < p.nodes * 2 + 2; i++)
+		dy[0].push_back(p.alpha * sinf(tanf(p.betta * (p.A + h*i))) + p.epsilon * cosf(p.gamma * (p.A + h * i)));
+
+
+	for (int i = 1; i < 2 * p.nodes + 2; i++)
+		for (int j = 0; j < 2 * p.nodes + 2 - i; j++)
+			dy[i].push_back(dy[i - 1][j + 1] - dy[i - 1][j]);
+
+
+
+
+	for (int x = 0; x < width; x++)
+	{
+		double xx = x * x_coef + p.A;
+
+		double c = 1;
+		double x0 = p.A + p.nodes * (p.B - p.A) / (2 * p.nodes + 1);
+		double q = (xx - x0) * (2 * p.nodes + 1) / (p.B - p.A);
+		double y = (dy[0][p.nodes] + dy[0][p.nodes + 1]) / 2;
+		y = y + (q - 0.5) * dy[1][p.nodes];
+
+		for (int i = 1; i < p.nodes + 1; i++)
+		{
+			c = c * (q + i - 1) * (q - i) / (2 * i);
+			y = y + c * (dy[2 * i][p.nodes - i] + dy[2 * i][p.nodes - i + 1]) / 2;
+			c = c / (2 * i + 1);
+			y = y + (q - 0.5) * c * dy[2 * i + 1][p.nodes - i];
+		}
+
+		y = y / y_coef + height / 2;
+
+		for (int i = -2; i < 2; i++)
+			for (int j = -3; j < 3; j++)
+				addPixel(graph, x + i, y + j, fColor(1.0f / (1 + i * i + j * j), 0.0f, 0.0f));
+
+	}
+
+
+	return graph;
 }
 
 
@@ -164,7 +145,7 @@ struct MainWindow : Window
 	Text  tDelta;
 	Button bCalculate;
 
-	fImage grafic;
+	fImage graph;
 	Params params;
 
 	MainWindow()
@@ -183,7 +164,7 @@ struct MainWindow : Window
 						if (LOWORD(wParam) == CALCULATE_ID)
 						{
 							window->params = get_input(window);
-							window->grafic = make_grafic(window->params);
+							window->graph = make_graph(window->params);
 							window->redraw();
 						}
 					}break;
@@ -193,7 +174,7 @@ struct MainWindow : Window
 						BeginPaint(hwnd, &plug);
 
 						draw_filled_rect(window->canvas, 0.0f, 0.7f, 1.0f, 1.0f, fColor(0.8f));
-						draw_image(window->canvas, window->grafic, 0.0f, 0.0f, 1.0f, 0.7f);
+						draw_image(window->canvas, window->graph, 0.0f, 0.0f, 1.0f, 0.7f);
 						window->render_canvas();
 
 						EndPaint(hwnd, &plug);
