@@ -105,38 +105,17 @@ struct Main_window : Window
 								std::vector<float> basis = window->text2float(basis_text);
 								Mat<float> limits = window->vec2mat(window->text2float(limits_text), window->nVars, window->nLimits);
 
-								//std::vector<float> target{1, 1, 1, 0};
-								//std::vector<float> basis{0, 1, 1};
-								//Mat<float> limits(2, 4);
-								//limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
-								//limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
-
-								//std::vector<float> target{-2, -1, -3, -1};
-								//std::vector<float> basis{0, 0, 1, 1};
-								//Mat<float> limits(2, 5);
-								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
-								//limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
-
-
-								//std::vector<float> target{-3, -2, 0};
-								//std::vector<float> basis{0, 0};
-								//Mat<float> limits(3, 3);
-								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 7;
-								//limits[1][0] = 2; limits[1][1] = 1; limits[1][2] = 8;
-								//limits[2][0] = 0; limits[2][1] = 1; limits[2][2] = 3;
-
-
 								int type = window->cMethod.choosed_index();
-								if (type == 0)
+								if (type == 2)
 								{
 									if (window->nVars != 2)
 										MessageBox(window->getHWND(), L"Problem can be sove only for two variables", L"Message", MB_OK);
 									else
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
-								else if (type == 1)
+								else if (type == 0)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
-								else
+								else if (type == 1)
 									new Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 							else
@@ -144,29 +123,10 @@ struct Main_window : Window
 								std::vector<Fraction> target = window->text2fraction(target_text);
 								std::vector<Fraction> basis = window->text2fraction(basis_text);
 								Mat<Fraction> limits = window->vec2mat(window->text2fraction(limits_text), window->nVars, window->nLimits);
-
-								//std::vector<Fraction> target{ 1, 1, 1, 0 };
-								//std::vector<Fraction> basis{ 0, 1, 1 };
-								//Mat<Fraction> limits(2, 4);
-								//limits[0][0] = -1; limits[0][1] = 1; limits[0][2] = 1; limits[0][3] = 2;
-								//limits[1][0] = 3; limits[1][1] = -1; limits[1][2] = 1; limits[1][3] = 0;
-
-								//std::vector<Fraction> target{ -2, -1, -3, -1 };
-								//std::vector<Fraction> basis{ 0, 0, 1, 1 };
-								//Mat<Fraction> limits(2, 5);
-								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 5; limits[0][3] = -1; limits[0][4] = 4;
-								//limits[1][0] = 1; limits[1][1] = -1; limits[1][2] = -1; limits[1][3] = 2; limits[1][4] = 1;
-
-								//std::vector<Fraction> target{ -3, -2, 0 };
-								//std::vector<Fraction> basis{ 0, 0 };
-								//Mat<Fraction> limits(3, 3);
-								//limits[0][0] = 1; limits[0][1] = 2; limits[0][2] = 7;
-								//limits[1][0] = 2; limits[1][1] = 1; limits[1][2] = 8;
-								//limits[2][0] = 0; limits[2][1] = 1; limits[2][2] = 3;
 								
 								// graphic method
 								int type = window->cMethod.choosed_index();
-								if (type == 0)
+								if (type == 2)
 								{
 									if (window->nVars != 2)
 										MessageBox(window->getHWND(), L"Problem can be solve only for two variables", L"Message", MB_OK);
@@ -174,9 +134,9 @@ struct Main_window : Window
 										new Graph_window(target, limits, window->cMin_max.choosed_index());
 								}
 								// simplex method
-								else if (type == 1)
+								else if (type == 0)
 									new Simplex_window(target, basis, limits, window->cMin_max.choosed_index());
-								else
+								else if (type == 1)
 									new Artificiant_basis_window(target, basis, limits, window->cMin_max.choosed_index());
 							}
 						}
@@ -223,9 +183,9 @@ struct Main_window : Window
 		set_font_size(lMethod.handle, 25);
 		
 		cMethod.init(getHWND(), 1, 0.05f, 0.1f, 0.15f, 0.05f, RESIZABLE, cStyle);
-		cMethod.add(L"graphic");
 		cMethod.add(L"simplex");
 		cMethod.add(L"artificial basis");
+		//cMethod.add(L"graphic");
 
 		
 		
@@ -470,7 +430,7 @@ struct Main_window : Window
 			Fraction in;
 
 			// parse target float
-			for (int i = 0; i < vars; i++)
+			for (int i = 0; i < vars + 1; i++)
 			{
 				swscanf_s(data + seek, L"%d/%d%n", &in.top, &in.bottom, &temp);
 				seek += temp;
@@ -481,7 +441,7 @@ struct Main_window : Window
 			// parse limits
 			for (int i = 0; i < lims; i++)
 			{
-				for (int j = 0; j < vars; j++)
+				for (int j = 0; j < vars + 1; j++)
 				{
 					swscanf_s(data + seek, L"%d/%d%n", &in.top, &in.bottom, &temp);
 					seek += temp;

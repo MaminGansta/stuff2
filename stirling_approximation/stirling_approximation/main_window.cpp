@@ -1,4 +1,4 @@
-
+#include <cassert>
 #define CALCULATE_ID 100
 
 // input struct
@@ -35,7 +35,7 @@ fImage make_grafic(Params p)
 	double y_coef = double(grafic_h) / (height / 2);
 
 	// step
-	double h = double(grafic_w) / (p.nodes + 1);
+	double h = double(grafic_w) / (p.nodes * 2 + 1);
 
 	// clear graph area
 	draw_filled_rect(grafic, 0, 0, 1.0f, 1.0f, fColor(0));
@@ -61,10 +61,10 @@ fImage make_grafic(Params p)
 	}
 
 	// draw original function
-	for (int x = 0; x < width-1; x++)
+	for (int x = 0; x < width; x++)
 	{
-		double xx = (x - p.A) * x_coef;
-		double y =  p.alpha * sinf(tanf(p.betta) * xx) + p.epsilon * cosf(p.gamma * xx);
+		double xx = x * x_coef + p.A;
+		double y =  p.alpha * sinf(tanf(p.betta * xx)) + p.epsilon * cosf(p.gamma * xx);
 		if (y < p.C || y > p.D) continue;
 		y = y / y_coef + height / 2;
 
@@ -79,73 +79,11 @@ fImage make_grafic(Params p)
 
 	////===== build stirling polinom =====
 	//// calculate delta y table
-	//std::vector<std::vector<double>> table_delta_y(p.nodes+1, std::vector<double>());
-	//
-	//
-	//for (int i = 0; i <= p.nodes; i++)
-	//	table_delta_y[0].push_back(p.alpha * sinf(tanf(p.betta) * (p.A + h*i)) + p.epsilon * cosf(p.gamma * (p.A + h * i)));
-	//
-	//
-	//for (int i = 1; i <= p.nodes; i++)
-	//	for (int j = 0; j <= p.nodes - i; j++)
-	//		table_delta_y[i].push_back(table_delta_y[i - 1][j+1] - table_delta_y[i - 1][j]);
-	//
-	//
-	//// prepare coeficients
-	//std::vector<double> coefs(p.nodes + 1);
-	//
-	//int n = 1;
-	//for (int i = 0; i < coefs.size(); i++)
-	//{
-	//	n *= i ? i : 1;
-	//	std::vector<double>& delta_y = table_delta_y[i];
-	//	int center = delta_y.size() / 2;
-	//	
-	//	if (delta_y.size() & 1)
-	//		coefs[i] = delta_y[center] / n;
-	//	else
-	//		coefs[i] = (delta_y[center] + delta_y[center - 1]) / 2 / n;
-	//}
-	//
-	//// draw graph
-	//double x0 = double(p.B - p.A) / 2.0;
-	////double x0 = 0.35f;
-	//
-	//for (int x = 0; x < width - 1; x++)
-	//{
-	//	double y = 0;
-	//	double q = (double(p.A + x * x_coef) - x0) / h;
-	//	
-	//	double priv_step = q;
-	//	for (int i = 0; i < coefs.size(); i++)
-	//	{
-	//		double a = 1.0;
-	//
-	//		for (int j = -i; j <= i; j++)
-	//			a *= q + j;
-	//
-	//		if (i & 1 == 0)
-	//			a *= q;
-	//
-	//		y += coefs[i] * a;
-	//	}
-	//
-	//	//if (y < p.C || y > p.D) continue;
-	//	y = y / y_coef + height / 2;
-	//
-	//	for (int i = -2; i < 2; i++)
-	//		for (int j = -3; j < 3; j++)
-	//			drawPixel(grafic, x + i, y + j, fColor(1.0f, 0.0f, 0.0f));
-	//
-	//}
-
-	// gauss polinom
-		// calculate delta y table
 	std::vector<std::vector<double>> table_delta_y(p.nodes+1, std::vector<double>());
 	
 	
 	for (int i = 0; i <= p.nodes; i++)
-		table_delta_y[0].push_back(p.alpha * sinf(tanf(p.betta) * (p.A + h*i)) + p.epsilon * cosf(p.gamma * (p.A + h * i)));
+		table_delta_y[0].push_back(p.alpha * sinf(tanf(p.betta * (p.A + h*i))) + p.epsilon * cosf(p.gamma * (p.A + h * i)));
 	
 	
 	for (int i = 1; i <= p.nodes; i++)
@@ -153,52 +91,52 @@ fImage make_grafic(Params p)
 			table_delta_y[i].push_back(table_delta_y[i - 1][j+1] - table_delta_y[i - 1][j]);
 	
 	
-	std::vector<double> coefs;
-	coefs.reserve(p.nodes + 1);
-	long long n = 1;
+	// prepare coeficients
+	std::vector<double> coefs(p.nodes + 1);
 	
-	for (int i = 0; i < p.nodes + 1; i++)
+	int n = 1;
+	for (int i = 0; i < coefs.size(); i++)
 	{
-		n *= i + 1;
-		int ind = (table_delta_y[i].size() - 1) / 2;
-		coefs.push_back(table_delta_y[i][ind] / n);
+		n *= i ? i : 1;
+		std::vector<double>& delta_y = table_delta_y[i];
+		int center = delta_y.size() / 2;
+		
+		if (delta_y.size() & 1)
+			coefs[i] = delta_y[center] / n;
+		else
+			coefs[i] = (delta_y[center] + delta_y[center - 1]) / 2 / n;
 	}
 	
-	double x0 = p.A + (fabs(p.B) + fabs(p.A)) / 2.0;
+	// draw graph
+	double x0 = double(p.B - p.A) / 2.0;
+	//double x0 = 0.35f;
 	
-	for (int x = 0; x < width; x++)
+	for (int x = 0; x < width - 1; x++)
 	{
 		double y = 0;
-		double q = (double(p.A + x * x_coef) - x0) / h;
-	
-		// y0
-		y += coefs[0];
-	
-		for (int i = 1; i < p.nodes + 1; i += 2)
+		double q = ((p.A + x * x_coef) - x0) / h;
+
+		double priv_step = q;
+		for (int i = 0; i < coefs.size(); i++)
 		{
-			double y1 = 1.0;
-			double y2 = 1.0;
-			
-			for (int a = 0; a < i; a++)
-				y1 *= (q + i - 1) - a;
-			y1 *= coefs[i];
-	
-			for (int a = 0; a < i + 1; a++)
-				y2 *= (q + i - 1) - a;
-			y2 *= coefs[i + 1];
-	
-			y += y1 + y2;
+			double a = 1.0;
+
+			for (int j = -i; j <= i; j++)
+				a *= q + j;
+
+			if (i & 1 == 0)
+				a *= q;
+
+			y += coefs[i] * a;
 		}
-	
+
 		//if (y < p.C || y > p.D) continue;
-		y = y / y_coef  + height / 2;
-	
+		y = y / y_coef + height / 2;
+
 		for (int i = -2; i < 2; i++)
 			for (int j = -3; j < 3; j++)
 				drawPixel(grafic, x + i, y + j, fColor(1.0f, 0.0f, 0.0f));
 	}
-
-
 
 	return grafic;
 }
@@ -271,7 +209,7 @@ struct MainWindow : Window
 
 		UINT myStyle = WS_VISIBLE | WS_CHILD | WS_BORDER;
 
-		lExpression.init(this->getHWND(), L"sin(tg(          )x) +           cos(          x)", 0, 0.1f, 0.02f, 0.53f, 0.06f, STATIC);
+		lExpression.init(this->getHWND(), L"sin(tg(          x)) +           cos(          x)", 0, 0.1f, 0.02f, 0.53f, 0.06f, STATIC);
 		tAlpha.init(this->getHWND(), 1, 0.03f, 0.02f, 0.07f, 0.06f, STATIC, myStyle);
 		tBetta.init(this->getHWND(), 2, 0.2f, 0.02f, 0.07f, 0.06f, STATIC, myStyle);
 		tEpsilon.init(this->getHWND(), 3, 0.35f, 0.02f, 0.07f, 0.06f, STATIC, myStyle);

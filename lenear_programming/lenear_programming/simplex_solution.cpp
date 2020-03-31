@@ -113,7 +113,8 @@ struct Simplex_window : Window
 			if (basis[i] > 0) amount++;
 
 		if (amount != limits.row)
-			calculate_basis(target, basis, limits);
+			if (!calculate_basis(target, basis, limits))
+				return;
 
 
 		Simplex_zero_step(target, basis, limits);
@@ -186,7 +187,7 @@ struct Simplex_window : Window
 		T c = T();
 		for (int i = 1; i < simplex_mat.row - 1; i++)
 		{
-			c += simplex_mat[i][simplex_mat.column - 1] * target[simplex_mat[0][i]];
+			c += simplex_mat[i][simplex_mat.column - 1] * target[simplex_mat[i][0]];
 		}
 		simplex_mat[simplex_mat.row - 1][simplex_mat.column - 1] = -(c + target[target.size() - 1]);
 
@@ -362,7 +363,7 @@ struct Simplex_window : Window
 
 	// ==================  if basis is zeroes lets calculate it =======================
 
-	void calculate_basis(std::vector<T>& target, std::vector<T>& basis, Mat<T>& limits)
+	bool calculate_basis(std::vector<T>& target, std::vector<T>& basis, Mat<T>& limits)
 	{
 		Simplex_step<T> step = bSimplex_zero_step(target, basis, limits);
 
@@ -374,9 +375,11 @@ struct Simplex_window : Window
 
 		for (int i = 1; i < step.rows() - 1; i++)
 		{
-			assert((int)step[i][0] < basis.size());
+		//	assert((int)step[i][0] < basis.size());
+			if ((unsigned)step[i][0] >= basis.size()) return false;
 			basis[(int)step[i][0]] = 1;
 		}
+		return true;
 	}
 
 
