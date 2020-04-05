@@ -59,12 +59,43 @@ struct Simplex_window : Window
 
 	Simplex_window(std::vector<T> target, std::vector<T>& basis, Mat<T>& limits, int type)
 	{
-		init(L"simplex method", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
+		init(L"симплекс метод", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
 			{
 				Simplex_window* window = (Simplex_window*)args[0];
 
 				switch (msg)
 				{
+					case WM_NOTIFY:
+					{
+						if (((LPNMHDR)lParam)->code == NM_CLICK && ((LPNMHDR)lParam)->hwndFrom == window->table.handle)
+						{
+							int col = ((LPNMLISTVIEW)lParam)->iSubItem;
+							int row = ((LPNMLISTVIEW)lParam)->iItem;
+
+							// find col and row in current table on the screen
+							Simplex_step<T>& last_step = window->steps.back();
+							int last_row = window->table.rows();
+							row = row - (last_row - last_step.rows()) + 1;
+
+							// find pivot in existed
+							pivot* p = NULL;
+							int ind = 0;
+							for (auto& pivot : last_step.pivots)
+							{
+								if (pivot.x == col && pivot.y == row)
+								{
+									p = &pivot;
+									break;
+								}
+								ind += 1;
+							}
+
+							if (p != NULL)
+								window->cPivot.set_selected(ind);
+
+							doutput("%d  %d\n", row, col);
+						}
+					}break;
 					case WM_COMMAND:
 					{
 						if (LOWORD(wParam) == window->bNext.id)
@@ -89,13 +120,13 @@ struct Simplex_window : Window
 		table.init(getHWND(), 0, 0, 0, 0.7f, 1.0f, RESIZABLE);
 		table.add_columns(std::vector<std::wstring>(limits.column + 2));
 
-		lPivot.init(getHWND(), L"Pivot choosed", 0, 0.7f, 0.3f, 0.2f, 0.05f, RESIZABLE);
+		lPivot.init(getHWND(), L"Опорный", 0, 0.7f, 0.3f, 0.2f, 0.05f, RESIZABLE);
 		set_font_size(lPivot.handle, 25);
 		cPivot.init(getHWND(), 0, 0.7f, 0.35f, 0.15f, 0.05f, RESIZABLE);
 
-		bPriv.init(getHWND(), L"Privius", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
-		bNext.init(getHWND(), L"Next", 101, 0.85f, 0.4f, 0.15f, 0.05f, RESIZABLE);
-		bAuto.init(getHWND(), L"Auto", 102, 0.7f, 0.45f, 0.15f, 0.05f, RESIZABLE);
+		bPriv.init(getHWND(), L"Предидущий", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
+		bNext.init(getHWND(), L"Следующий", 101, 0.85f, 0.4f, 0.15f, 0.05f, RESIZABLE);
+		bAuto.init(getHWND(), L"Авто", 102, 0.7f, 0.45f, 0.15f, 0.05f, RESIZABLE);
 
 
 		// make min if it's max

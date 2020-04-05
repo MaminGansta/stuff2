@@ -5,7 +5,7 @@ struct About_window : Window
 
 	About_window()
 	{
-		init(L"About", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)
+		init(L"Описание", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)
 			{
 				About_window* window = (About_window*)args[0];
 
@@ -13,31 +13,34 @@ struct About_window : Window
 			}, DEF_WINDOW);
 
 		lAbout.init(getHWND(), L""
-			"Short discription\n" 
+			"Описание\n" 
 			""
-			"In this program was implemented two solving methods (Artifitial basis method, Simplex method)\n\n"
+			"1)Для того чтобы что бы ввести матрицу необходимо заполнить поля 'Переменные' и 'Ограничения'"
+			"натуральными числами до 16 включительно\n"
+			"Числа с плавающей точкей вводить с точкой(0.4), а дроби через / (1/5) или целое число (5)\n\n"
 			""
-			"Menu:\n"
-			"1) File provides save and open files(file saves in dir with .exe and it's name is current date)\n\n"
+			"2) Далее выбирете параметры решения:\n"
+			"     1) Метод решения (Симплекс или Искуственный базис)\n"
+			"     2) Тип целевой функции (мин, макс)\n"
+			"     3) Тип входных чисел\n\n"
 			""
+			"3) Нажмите кнопку решить\n\n"
 			""
-			"Interface:\n"
-			"1) Method - means what kind of method is active now\n"
-			"2) Type - meant what kind of problem (min, max)\n"
-			"3) Number type - float(0.01), Fraction(3/6) also just integer is posible Fraction(3)\n"
-			"4) Variables and Limits fileds (there is a limit <16 for both)\n\n"
+			"4) После этого появиться окно решения метода который был выбран.\n"
+			" Для того что бы выполнить следующий шаг нажмите кнопку Следующий.\n"
+			" Для того что бы вернуться на предидущий шаг нажмите кнопку Предидущий.\n"
+			" Для того что бы решение завершилось автоматически кнопку нажмите Авто.\n"
+			" Для того что бы выбрать опорный элемент щекните на Комбо бокс, и выбирете нужный,"
+			" там представлены все возможные варианты.\n\n"
 			""
-			"1) Artifical basis\n"
-			"Here is ComboBox and 3 buttons. In CB are all posible pivots elements, (x - 1, y - 1) are indices in Simplex table.\n"
-			"Button next and privius make or remove one step of algorithm. This method ignore basis input fieds\n\n"
+			"5) Алгоритм заканчивает свою работу когда больше нет опорных елементов\n\n"
 			""
-			"2) Simplex method\n"
-			"The same with the privius one but here is posible to set basis.\n"
-			"If basis is zeroes or incorect it will be calculated automaticly by A.B.\n\n"
+			"6) В симплекс методе при вводе некоректного базиса, он будет вычислен автоматически\n\n"
 			""
-			"3) Also\n"
-			"   1)Empty fields are zoroes"
-			""
+			"7) Ввод/Вывод\n"
+			"  Для того чтобы данные сохранить в файл нажмите на меню Файл и сохранить, "
+			"  в директории с программой появиться файл с текущей датой и времинем\n"
+			"  Чтобы открыть файл нужно нажать на меню Фйал открыть и выбрать нужный файл\n"
 			"", 0, 0.0f, 0.0f, 1.0f, 1.0f, RESIZABLE);
 
 		set_font_size(lAbout.handle, 20);

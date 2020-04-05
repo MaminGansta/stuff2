@@ -1,4 +1,3 @@
-#include <filesystem>
 #include <ctime>
 
 struct Main_window : Window
@@ -39,7 +38,7 @@ struct Main_window : Window
 	Main_window()
 	{
 		// window init
-		init(L"linear programming", 1100, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
+		init(L"Линейное программирование", 1100, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
 			{
 				Main_window* window = (Main_window*)args[0];
 
@@ -50,11 +49,11 @@ struct Main_window : Window
 						HMENU hMenuBar = CreateMenu();
 						HMENU hFileMenu = CreateMenu();
 
-						AppendMenu(hFileMenu, MF_STRING, 301, L"open");
-						AppendMenu(hFileMenu, MF_STRING, 302, L"save");
+						AppendMenu(hFileMenu, MF_STRING, 301, L"открыть");
+						AppendMenu(hFileMenu, MF_STRING, 302, L"сохранить");
 
-						AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFileMenu, L"File");
-						AppendMenu(hMenuBar, MF_STRING, 303, L"About");
+						AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFileMenu, L"Файл");
+						AppendMenu(hMenuBar, MF_STRING, 303, L"Описание");
 
 						SetMenu(hwnd, hMenuBar);
 					}break;
@@ -84,13 +83,13 @@ struct Main_window : Window
 						{
 							if (window->nVars < 2)
 							{
-								MessageBox(window->getHWND(), L"Few variables", L"Message", MB_OK);
+								MessageBox(window->getHWND(), L"Недостаточно переменных", L"Message", MB_OK);
 								break;
 							}
 
 							if (window->nLimits < 1)
 							{
-								MessageBox(window->getHWND(), L"Few limits", L"Message", MB_OK);
+								MessageBox(window->getHWND(), L"Недостаточно ограничений", L"Message", MB_OK);
 								break;
 							}
 
@@ -179,57 +178,57 @@ struct Main_window : Window
 		UINT cStyle = CBS_DROPDOWN | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE;
 		UINT tStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | ES_CENTER | ES_NUMBER;
 
-		lMethod.init(getHWND(), L"Method", 0, 0, 0.05f, 0.2f, 0.05f, RESIZABLE, lStyle);
+		lMethod.init(getHWND(), L"Метод", 0, 0, 0.05f, 0.2f, 0.05f, RESIZABLE, lStyle);
 		set_font_size(lMethod.handle, 25);
 		
 		cMethod.init(getHWND(), 1, 0.05f, 0.1f, 0.15f, 0.05f, RESIZABLE, cStyle);
-		cMethod.add(L"simplex");
-		cMethod.add(L"artificial basis");
+		cMethod.add(L"Симплекс метод");
+		cMethod.add(L"Искуственный базис");
 		//cMethod.add(L"graphic");
 
 		
 		
-		lMin_max.init(getHWND(), L"Type", 0, 0, 0.2f, 0.2f, 0.05f, RESIZABLE, lStyle);
+		lMin_max.init(getHWND(), L"Тип", 0, 0, 0.2f, 0.2f, 0.05f, RESIZABLE, lStyle);
 		set_font_size(lMin_max.handle, 25);
 		
 		cMin_max.init(getHWND(), 1, 0.05f, 0.25f, 0.15f, 0.05f, RESIZABLE, cStyle);
-		cMin_max.add(L"min");
-		cMin_max.add(L"max");
+		cMin_max.add(L"Минимум");
+		cMin_max.add(L"Максимум");
 		
-		lNumbers_type.init(getHWND(), L"Numbers type", 0, 0, 0.35f, 0.2f, 0.05f, RESIZABLE, lStyle);
+		lNumbers_type.init(getHWND(), L"Тип чисел", 0, 0, 0.35f, 0.2f, 0.05f, RESIZABLE, lStyle);
 		set_font_size(lNumbers_type.handle, 25);
 		
 		cNumbers_type.init(getHWND(), 1, 0.05f, 0.4f, 0.15f, 0.05f, RESIZABLE, cStyle);
-		cNumbers_type.add(L"floating point");
-		cNumbers_type.add(L"fraction");
+		cNumbers_type.add(L"Плавающая точка");
+		cNumbers_type.add(L"Дробь");
 		
 		
-		lVars.init(getHWND(), L"Variabals amount", 0, 0, 0.5f, 0.2f, 0.05f, RESIZABLE, lStyle);
-		set_font_size(lVars.handle, 23);
+		lVars.init(getHWND(), L"Переменные", 0, 0, 0.5f, 0.2f, 0.05f, RESIZABLE, lStyle);
+		set_font_size(lVars.handle, 25);
 		tVars.init(getHWND(), 0, 0.05f, 0.55f, 0.15f, 0.05f, RESIZABLE, tStyle);
 		
-		lLimits.init(getHWND(), L"Limits amount", 0, 0, 0.6f, 0.2f, 0.05f, RESIZABLE, lStyle);
+		lLimits.init(getHWND(), L"Огранияения", 0, 0, 0.6f, 0.2f, 0.05f, RESIZABLE, lStyle);
 		set_font_size(lLimits.handle, 25);
 		tLimits.init(getHWND(), 0, 0.05f, 0.65f, 0.15f, 0.05f, RESIZABLE, tStyle);
 		
-		bSolve.init(getHWND(), L"Solve", BTN_SOLVE, 0.01f, 0.75f, 0.19f, 0.2f, RESIZABLE);
+		bSolve.init(getHWND(), L"Решить", BTN_SOLVE, 0.01f, 0.75f, 0.19f, 0.2f, RESIZABLE);
 		set_font_size(bSolve.handle, 25);
 
-		bClear.init(getHWND(), L"clear", BTN_CLEAR, 0.01f, 0.95f, 0.1f, 0.05f, RESIZABLE);
+		bClear.init(getHWND(), L"очистить", BTN_CLEAR, 0.01f, 0.95f, 0.1f, 0.05f, RESIZABLE);
 
 
 		// create input fileds table
-		Limits.init(getHWND(), L"Limits", 0, 0.2f, 0.15f, 0.1f, 0.05f);
+		Limits.init(getHWND(), L"Ограничения", 0, 0.2f, 0.15f, 0.13f, 0.05f);
 		set_font_size(Limits.handle, 25);
 
 		limits.init(getHWND(), 16, 17, 0.2f, 0.2f, 0.0445f, 0.035f, CELL_SIZE);
 
-		lTarget.init(getHWND(), L"Target function", 0, 0.2f, 0.0f, 0.1f, 0.05f);
+		lTarget.init(getHWND(), L"Целевая функция", 0, 0.2f, 0.0f, 0.1f, 0.05f);
 		set_font_size(lTarget.handle, 25);
 
 		target.init(getHWND(), 1, 17, 0.2f, 0.05f, 0.0445f, 0.035f, CELL_SIZE);
 
-		lBasis.init(getHWND(), L"Basis", 0, 0.2f, 0.85f, 0.1f, 0.05f);
+		lBasis.init(getHWND(), L"Басис", 0, 0.2f, 0.85f, 0.1f, 0.05f);
 		set_font_size(lBasis.handle, 25);
 
 		basis.init(getHWND(), 1, 17, 0.2f, 0.9f, 0.0445f, 0.035f, CELL_SIZE);

@@ -227,7 +227,10 @@ void to_str<float>(wchar_t buffer[], float a)
 template <>
 void to_str<Fraction>(wchar_t buffer[], Fraction a)
 {
-	swprintf_s(buffer, 32, L"%d/%d ", a.top, a.bottom);
+	if (a.bottom == 1)
+		swprintf_s(buffer, 32, L"%d ", a.top);
+	else
+		swprintf_s(buffer, 32, L"%d/%d ", a.top, a.bottom);
 }
 
 

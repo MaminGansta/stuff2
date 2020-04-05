@@ -31,7 +31,7 @@ fImage make_graph(Params p)
 	int graph_h = p.D - p.C;
 
 	double x_coef = (double)graph_w / width;
-	double y_coef = (double)graph_h / (height / 2);
+	double y_coef = (double)graph_h / height;
 
 	fImage graph(width, height);
 
@@ -114,7 +114,7 @@ fImage make_graph(Params p)
 
 		for (int i = -2; i < 2; i++)
 			for (int j = -3; j < 3; j++)
-				addPixel(graph, x + i, y + j, fColor(1.0f / (1 + i * i + j * j), 0.0f, 0.0f));
+				drawPixel(graph, x + i, y + j, fColor(1.0f, 0.0f, 0.0f));
 
 	}
 
