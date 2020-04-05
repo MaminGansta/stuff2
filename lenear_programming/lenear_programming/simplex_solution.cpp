@@ -251,12 +251,12 @@ struct Simplex_window : Window
 		{
 			if (step[target_row][i] > -0.001f) continue;
 
-			T min = MAXINT32;
+			T min = 10000;
 			int x = -1, y = -1;
 			for (int j = 1; j < step.rows() - 1; j++)
 			{
 				T temp = step[j][step.cols() - 1] / step[j][i];
-				if (temp >= 0 && temp <= min && step[j][i] > 0)
+				if (temp <= min && step[j][i] > 0)
 				{
 					min = temp;
 					x = i;

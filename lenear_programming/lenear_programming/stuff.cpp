@@ -147,6 +147,16 @@ struct Fraction
 		return top * f.bottom < f.top* bottom;
 	}
 
+	bool operator<= (Fraction f)
+	{
+		return top * f.bottom <= f.top* bottom;
+	}
+
+	bool operator== (Fraction f)
+	{
+		return top * f.bottom == f.top* bottom;
+	}
+
 	// int
 	Fraction operator+ (int other)
 	{

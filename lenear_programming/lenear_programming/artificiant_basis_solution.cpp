@@ -170,13 +170,13 @@ struct Artificiant_basis_window : Window
 		{
 			if (step[target_row][i] > -0.001f) continue;
 
-			T min = MAXINT32;
+			T min = 10000;
 			std::vector<pivot> mins;
 
 			for (int j = 1; j < step.rows() - 1; j++)
 			{
 				T temp = step[j][step.cols() - 1] / step[j][i];
-				if (temp >= 0 && temp <= min && step[j][i] > 0)
+				if (step[j][i] > 0 && temp <= min)
 				{
 					if (min == temp)
 						mins.push_back({i, j});
