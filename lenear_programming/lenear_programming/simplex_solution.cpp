@@ -386,7 +386,7 @@ struct Simplex_window : Window
 		cPivot.clear();
 		for (pivot p : steps.back().pivots)
 		{
-			swprintf_s(buffer, L"(x - %d, y - %d)", p.x, p.y);
+			swprintf_s(buffer, L"col %d, row %d)", p.x, p.y);
 			cPivot.add(buffer);
 		}
 	}

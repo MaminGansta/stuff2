@@ -1,19 +1,78 @@
 
-#ifndef color_clipf
-#define color_clipf(color) (MIN(MAX(color, 0.0f), 1.0f))
-#endif
+
+template <typename T>
+T chanel_clip(T color);
+
+template <>
+float chanel_clip<float>(float color) { return MIN(MAX(color, 0.0f), 1.0f); }
+
+template <>
+int chanel_clip<int>(int color) { return MIN(MAX(color, 0), 255); }
+
+template <>
+uint8_t chanel_clip<uint8_t>(uint8_t color) { return MIN(MAX(color, 0), 255); }
+
 
 // ============= standart image ==================
 
 struct Image
 {
-	int height, width;
+	int height = 0, width = 0;
 	Color* data = NULL;
 	bool invalid = false;
 
 	Image() = default;
 	Image(const wchar_t* filename_utf8)
 	{
+		open(filename_utf8);
+	}
+
+	Image(const Image& copy)
+	{
+		height = copy.height;
+		width = copy.width;
+		data = new Color[height * width];
+		memmove(data, copy.data, sizeof(Color) * height * width);
+		invalid = false;
+	}
+
+	Image(Image&& other)
+	{
+		data = other.data;
+		width = other.width;
+		height = other.height;
+		other.data = NULL;
+		other.invalid = true;
+		invalid = false;
+	}
+
+	Image& operator= (const Image& copy)
+	{
+		delete[] data;
+		height = copy.height;
+		width = copy.width;
+		data = new Color[height * width];
+		memmove(data, copy.data, sizeof(Color) * height * width);
+		invalid = false;
+		return *this;
+	}
+
+	Image& operator = (Image&& other)
+	{
+		delete[] data;
+		data = other.data;
+		width = other.width;
+		height = other.height;
+		other.data = NULL;
+		other.invalid = true;
+		invalid = false;
+		return *this;
+	}
+
+	void open(const wchar_t* filename_utf8)
+	{
+		delete[] data;
+
 		int chanels;
 		char filename[256];
 		stbi_convert_wchar_to_utf8(filename, sizeof(filename), filename_utf8);
@@ -25,19 +84,29 @@ struct Image
 			invalid = true;
 			return;
 		}
-		
+
 		data = new Color[width * height];
-		
+
 		for (int y = 0; y < height; y++)
 		{
 			for (int x = 0; x < width; x++)
 			{
 				int pos = (y * width + x) * chanels;
-				data[(height - y - 1) * width + x] = Color(raw[pos], raw[pos + 1], raw[pos +2]);
+				data[(height - y - 1) * width + x] = Color(raw[pos], raw[pos + 1], raw[pos + 2]);
 			}
 		}
 
 		stbi_image_free(raw);
+	}
+
+
+	void resize(int width, int height)
+	{
+		this->width = width;
+		this->height = height;
+		delete[] data;
+		data = new Color[width * height];
+		invalid = false;
 	}
 
 	Image(int width, int height) : width(width), height(height)
@@ -45,35 +114,6 @@ struct Image
 		data = new Color[width * height];
 		invalid = false;
 	}
-
-	Image(Image& copy)
-	{
-		height = copy.height;
-		width = copy.width;
-		data = new Color[height * width];
-		memmove(data, copy.data, sizeof(Color) * height * width);
-	}
-
-	Image(Image&& other)
-	{
-		data = other.data;
-		width = other.width;
-		height = other.height;
-		other.data = NULL;
-		other.invalid = true;
-	}
-
-	Image& operator = (Image&& other)
-	{
-		delete[] data;
-		data = other.data;
-		width = other.width;
-		height = other.height;
-		other.data = NULL;
-		other.invalid = true;
-		return *this;
-	}
-
 
 	Color& get_pixel(int x, int y)
 	{
@@ -84,6 +124,12 @@ struct Image
 	Color& operator [] (int idx)
 	{
 		assert((uint32_t)idx < width * height);
+		return data[idx];
+	}
+
+	const Color& operator [] (int idx) const
+	{
+		assert((uint32_t)idx < width* height);
 		return data[idx];
 	}
 
@@ -110,46 +156,8 @@ struct Image
 };
 
 
-void draw_image(Canvas& surface, const Image& image,
-				float fpos_x, float fpos_y, float fwidth, float fheight)
-{
-	if (fpos_x > 1.0f || fpos_y > 1.0f || fpos_x < 0.0f || fpos_y < 0.0f) return;
-
-	int pos_x = surface.width * fpos_x;
-	int pos_y = surface.height *fpos_y;
-
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight= min(fheight, 1.0f - fpos_y);
-
-	int width  = surface.width * fwidth;
-	int height = surface.height * fheight;
-
-	std::future<void> res[MAX_THREADS];
-
-	for (int i = 0; i < workers.size; i++)
-	{
-		int from_x = i * width / workers.size;
-		int to_x   = (i + 1) * width / workers.size;
-
-		res[i] = workers.add_task([from_x, to_x, pos_y, pos_x, height, width, &surface, &image]()
-		{
-			for (int y = 0; y < height; y++)
-				for (int x = from_x; x < to_x; x++)
-				{
-					assert(x < surface.width);
-					Color color = image.get_pixel_scaled(x, y, width, height);
-					surface.memory[(y + pos_y) * surface.width + (x + pos_x)] = color;
-				}
-		});
-	}
-	
-	for (int i = 0; i < workers.size; i++)
-		res[i].get();
-}
-
 
 // =============== float Image  ==================
-
 
 struct fColor
 {
@@ -160,10 +168,11 @@ struct fColor
 		float raw[4];
 	};
 
-	inline fColor() = default;
-	inline fColor(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {}
-	inline fColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(float(r) / 255.0f), g(float(g) / 255.0f), b(float(b) / 255.0f), a(float(a) / 255.0f) {}
-	inline fColor(float color) : r(color), g(color), b(color), a(1.0f) {}
+	fColor() = default;
+	fColor(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {}
+	fColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(float(r) / 255.0f), g(float(g) / 255.0f), b(float(b) / 255.0f), a(float(a) / 255.0f) {}
+	fColor(float color) : r(color), g(color), b(color), a(1.0f) {}
+	fColor(Color color) : r(float(color.r) / 255.0f), g(float(color.g) / 255.0f), b(float(color.b) / 255.0f), a(float(color.a) / 255.0f) {}
 
 
 	fColor operator +(const fColor& f)
@@ -197,22 +206,29 @@ struct fColor
 		return *this;
 	}
 
-	Color get_uint() const
+	operator Color() const
 	{
-		return Color(255.0f * r, 255.0f * g, 255.0f * b, 255.0f * a);
+		return Color(chanel_clip<int>(r * 255.0f), chanel_clip<int>(g * 255.0f), chanel_clip<int>(b * 255.0f), chanel_clip<int>(a * 255.0f));
 	}
 };
 
 
 struct fImage
 {
-	int height, width;
+	int height = 0, width = 0;
 	fColor* data = NULL;
 	bool invalid = true;
 
 	fImage() = default;
 	fImage(const wchar_t* filename_utf8)
 	{
+		open(filename_utf8);
+	}
+
+	void open(const wchar_t* filename_utf8)
+	{
+		delete[] data;
+
 		int chanels;
 		char filename[256];
 		stbi_convert_wchar_to_utf8(filename, sizeof(filename), filename_utf8);
@@ -252,7 +268,7 @@ struct fImage
 		invalid = false;
 	}
 
-	fImage(fImage && other)
+	fImage(fImage&& other)
 	{
 		data = other.data;
 		width = other.width;
@@ -260,6 +276,14 @@ struct fImage
 		other.data = NULL;
 		other.invalid = true;
 		invalid = false;
+	}
+
+	fImage(const Image& image)
+	{
+		resize(image.width, image.height);
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < width; j++)
+				data[i * width + j] = image[i * width + j];
 	}
 
 	fImage& operator = (const fImage& copy)
@@ -334,66 +358,13 @@ struct fImage
 		return data[y * width + x];
 	}
 
+	operator Image()
+	{
+		Image res(width, height);
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < width; j++)
+				res[i * width + j] = data[i * width + j];
+		return res;
+	}
+
 };
-
-void draw_image(Canvas& surface, const fImage& image,
-	float fpos_x, float fpos_y, float fwidth, float fheight)
-{
-	if (fpos_x > 1.0f || fpos_y > 1.0f || fpos_x < 0.0f || fpos_y < 0.0f || image.invalid) return;
-
-	int pos_x = surface.width * fpos_x;
-	int pos_y = surface.height * fpos_y;
-
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
-
-	int width = surface.width * fwidth;
-	int height = surface.height * fheight;
-
-	for (int y = 0; y < height; y++)
-	{
-		for (int x = pos_x; x < width; x++)
-		{
-			assert(x < surface.width);
-			Color color = image.get_pixel_scaled(x, y, width, height).get_uint();
-			surface.memory[(y + pos_y) * surface.width + (x + pos_x)] = color;
-		}
-	}
-}
-
-void draw_image_async(Canvas& surface, const fImage& image,
-	float fpos_x, float fpos_y, float fwidth, float fheight)
-{
-	if (fpos_x > 1.0f || fpos_y > 1.0f || fpos_x < 0.0f || fpos_y < 0.0f) return;
-
-	int pos_x = surface.width * fpos_x;
-	int pos_y = surface.height * fpos_y;
-
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
-
-	int width = surface.width * fwidth;
-	int height = surface.height * fheight;
-
-	std::future<void> res[MAX_THREADS];
-
-	for (int i = 0; i < workers.size; i++)
-	{
-		int from_x = i * width / workers.size;
-		int to_x = (i + 1) * width / workers.size;
-
-		res[i] = workers.add_task([from_x, to_x, pos_y, pos_x, height, width, &surface, &image]()
-		{
-			for (int y = 0; y < height; y++)
-				for (int x = from_x; x < to_x; x++)
-				{
-					assert(x < surface.width);
-					Color color = image.get_pixel_scaled(x, y, width, height).get_uint();
-					surface.memory[(y + pos_y) * surface.width + (x + pos_x)] = color;
-				}
-		});
-	}
-
-	for (int i = 0; i < workers.size; i++)
-		res[i].get();
-}

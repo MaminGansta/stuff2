@@ -41,6 +41,7 @@ void components_remove (HWND parent, HWND handle);
 #define DYNAMIC 1
 #define RESIZABLE 2
 
+int global_id = 0;
 struct Component
 {
 	int id;
@@ -50,16 +51,13 @@ struct Component
 	HWND handle;
 	HWND parent;
 
-	Component() = default;
+	Component() : id(global_id++) {}
 	~Component() { components_remove(parent, handle); DestroyWindow(handle); }
 
-	void resize()
+	void resize(RECT& rect)
 	{
-		if (type == STATIC)
-			return;
+		if (type == STATIC) return;
 
-		RECT rect;
-		GetClientRect(parent, &rect);
 		int nWidth = rect.right - rect.left;
 		int nHeight = rect.bottom - rect.top;
 
@@ -68,7 +66,7 @@ struct Component
 		if (type == DYNAMIC)
 			flags = SWP_NOSIZE;
 
-		SetWindowPos(handle, 0, x * nWidth, y * nHeight, width * nWidth, height * nHeight, flags);
+		SetWindowPos(handle, 0, x * nWidth, y * nHeight, width * nWidth + 1, height * nHeight + 1, flags);
 	}
 
 	void resize(float width, float height)
@@ -81,7 +79,7 @@ struct Component
 		int nWidth = rect.right - rect.left;
 		int nHeight = rect.bottom - rect.top;
 		
-		SetWindowPos(handle, 0, 0, 0, width * nWidth, height * nHeight, SWP_NOZORDER | SWP_NOMOVE);
+		SetWindowPos(handle, 0, 0, 0, width * nWidth + 1, height * nHeight + 1, SWP_NOZORDER | SWP_NOMOVE);
 	}
 
 	void move(float x, float y)
@@ -105,33 +103,65 @@ struct Component
 
 struct Component_crt
 {
-	std::unordered_map<HWND, std::vector<Component*>> components;
+	std::vector<std::pair<HWND, std::vector<Component*>>> components;
 
 	void add(HWND parent, Component* comp)
 	{
-		components[parent].push_back(comp);
+		//if (comp->type == STATIC) return;
+
+		auto pointer = std::find_if(components.begin(), components.end(), [&parent](const std::pair<HWND, std::vector<Component*>>& elem) {return elem.first == parent;});
+		// if no such handle in storage
+		if (pointer == components.end())
+		{
+			components.push_back(std::make_pair(parent, std::vector<Component*>()));
+			components.back().second.push_back(comp);
+			return;
+		}
+
+		// add component to the parent
+		pointer->second.push_back(comp);
 	}
 
 	void remove(HWND parent)
 	{
-		components.erase(parent);
+		auto pointer = std::find_if(components.begin(), components.end(), [&parent](const std::pair<HWND, std::vector<Component*>>& elem) {return elem.first == parent;});
+		if (pointer == components.end()) return;
+
+		components.erase(pointer);
 	}
 
-	void update(HWND parent)
+	void resize(HWND parent)
 	{
-		for (auto& component : components[parent])
-			component->resize();
+		auto pointer = std::find_if(components.begin(), components.end(), [&parent](const std::pair<HWND, std::vector<Component*>>& elem) {return elem.first == parent;});
+		if (pointer == components.end()) return;
+		
+		RECT rect;
+		GetClientRect(parent, &rect);
+
+		for (auto& component : pointer->second)
+			component->resize(rect);
 	}
 
 	void redraw(HWND parent)
 	{
-		for (auto& component : components[parent])
+		auto pointer = std::find_if(components.begin(), components.end(), [&parent](const std::pair<HWND, std::vector<Component*>>& elem) {return elem.first == parent; });
+		if (pointer == components.end()) return;
+		
+		for (auto& component : pointer->second)
 			RedrawWindow(component->handle, 0, 0, RDW_INVALIDATE | RDW_NOCHILDREN);
 	}
 
-	auto& operator[] (HWND hwnd)
+	auto& operator[] (HWND parent)
 	{
-		return components[hwnd];
+		auto pointer = std::find_if(components.begin(), components.end(), [&parent](const std::pair<HWND, std::vector<Component*>>& elem) {return elem.first == parent; });
+
+		if (pointer == components.end())
+		{
+			components.push_back(std::make_pair(parent, std::vector<Component*>()));
+			return components.back().second;
+		}
+
+		return pointer->second;
 	}
 
 };
@@ -165,6 +195,8 @@ struct HWND_constainer
 		arguments.remove(handle->second);
 		DestroyWindow(handle->second);
 		handles.erase(handle);
+		// no one active window
+		if (size() == 0) PostQuitMessage(0);
 	}
 
 	HWND operator [](int id)
@@ -191,25 +223,23 @@ struct Window
 {	
 	int class_id;
 	static int name_id;
+	HWND handle;
 	HDC hdc;
 	Canvas canvas;
 	int min_w = 0, min_h = 0;
 	int max_w = 600, max_h = 800;
 
 	Window() {}
-	
 	Window(
 		const std::wstring& window_name,
 		int width,
 		int height,
 		std::function<LRESULT(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)> callback,
 		UINT style = DEF_WINDOW,
-		HWND parent = NULL,
-		void* arg_ptr = NULL,
-		int id = 0
+		HWND parent = NULL
 	)
 	{
-		init(window_name, width, height, callback, style, parent, arg_ptr, id);
+		init(window_name, width, height, callback, style, parent);
 	}
 
 	void init(
@@ -218,14 +248,11 @@ struct Window
 		int height,
 		std::function<LRESULT(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)> callback,
 		UINT style = DEF_WINDOW,
-		HWND parent = NULL,
-		void* arg_ptr = NULL,
-		int id = 0
+		HWND parent = NULL
 	)
 	{
 		wchar_t class_name[16];
 		swprintf_s(class_name, L"class_%d", name_id++);
-		std::wstring name(class_name);
 
 		WNDCLASSEX wc;
 		wc.cbSize = sizeof(wc);
@@ -237,8 +264,8 @@ struct Window
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 		wc.lpszMenuName = NULL;
-		wc.lpszClassName = name.c_str();
-		//  wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
+		wc.lpszClassName = class_name;
+		wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 		wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
 
@@ -247,18 +274,19 @@ struct Window
 		{
 			Args args = arguments.get(hwnd);
 			Window* window = (Window*)args[0];
-			if (window == NULL) return DefWindowProc(hwnd, msg, wParam, lParam);
+			if (window == NULL)	return DefWindowProc(hwnd, msg, wParam, lParam);
 
+			PAINTSTRUCT plug;
 			switch (msg)
 			{
 				case WM_SIZE:
 				{
 					window->canvas.resize(hwnd);
-					components.update(hwnd);
+					components.resize(hwnd);
 				}break;
 				case WM_PAINT:
 				{
-					components.redraw(hwnd);
+					BeginPaint(hwnd, &plug);
 				}break;
 				case  WM_GETMINMAXINFO:
 				{
@@ -269,10 +297,28 @@ struct Window
 					lpMMI->ptMaxTrackSize.x = window->max_w;
 					lpMMI->ptMaxTrackSize.y = window->max_h;
 				}break;
+
+				
 			}
 			
 			// user's callback
-			return args.callback(hwnd, msg, wParam, lParam, args);
+			LRESULT res = args.callback(hwnd, msg, wParam, lParam, args);
+
+
+			switch (msg)
+			{
+				case WM_PAINT:
+				{
+					EndPaint(hwnd, &plug);
+					components.redraw(hwnd);
+				}break;
+				case WM_CLOSE:
+				{
+					safe_release(window);
+				}return 0;
+			}
+
+			return res;
 		};
 
 
@@ -282,26 +328,25 @@ struct Window
 			assert(false);
 		}
 
-		HWND handle = CreateWindow(wc.lpszClassName, window_name.c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, parent, (HMENU)id, (HINSTANCE)hInst, NULL);
+		handle = CreateWindow(wc.lpszClassName, window_name.c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, parent, (HMENU)0, (HINSTANCE)hInst, NULL);
+		hdc = GetDC(handle);
 
 		// set window def ssize
 		set_min_max_size(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
 
-		// put window ptr to global holder
-		arguments.add(handle, this, arg_ptr, callback);
-
 		// put handle to the global holder
 		class_id = handles.add(handle);
+
+		// put window ptr to global holder
+		arguments.add(handle, this, NULL, callback);
 
 		// repeat messages
 		SendMessage(handle, WM_CREATE, 0, 0);
 		SendMessage(handle, WM_SIZE, 0, 0);
 		SendMessage(handle, WM_PAINT, 0, 0);
-
-		hdc = GetDC(handle);
 	}
 
-	virtual ~Window() { components.remove(getHWND()); handles.remove(class_id); }
+	virtual ~Window() { components.remove(handle); handles.remove(class_id); }
 
 	void render_canvas()
 	{
@@ -311,7 +356,7 @@ struct Window
 	void redraw()
 	{
 		//RedrawWindow(getHWND(), 0, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
-		SendMessage(getHWND(), WM_PAINT, 0, 0);
+		SendMessage(handle, WM_PAINT, 0, 0);
 	}
 
 #define MAX_WIN_SIZE -1
@@ -334,7 +379,7 @@ struct Window
 			max_h = maxh;
 	}
 
-	HWND getHWND() { return handles[class_id]; }
+	HWND getHWND() { return handle; }
 
 	static void default_msg_proc() {
 		MSG msg;
@@ -369,13 +414,12 @@ struct Button : Component
 	std::wstring text;
 
 	Button() = default;
-	Button(const Button& btn) { init(btn.parent, btn.text, btn.id, btn.x, btn.y, btn.width, btn.height, btn.type, btn.style);  }
-	Button& operator= (const Button& btn) { init(btn.parent, btn.text, btn.id, btn.x, btn.y, btn.width, btn.height, btn.type, btn.style); return *this; }
+	Button(const Button& btn) { init(btn.parent, btn.text, btn.x, btn.y, btn.width, btn.height, btn.type, btn.style);  }
+	Button& operator= (const Button& btn) { init(btn.parent, btn.text, btn.x, btn.y, btn.width, btn.height, btn.type, btn.style); return *this; }
 
 	Button(
 		HWND parent,
 		const std::wstring& text,
-		int id,
 		float x,
 		float y,
 		float width,
@@ -384,13 +428,12 @@ struct Button : Component
 		UINT style = DEF_BUTTON
 	)
 	{
-		init(parent, text, id, x, y, width, height, type, style);
+		init(parent, text, x, y, width, height, type, style);
 	}
 
 	void init(
 		HWND parent,
 		const std::wstring& text,
-		int id,
 		float x,
 		float y,
 		float width = 0.1f,
@@ -399,7 +442,6 @@ struct Button : Component
 		UINT style = DEF_BUTTON
 		)
 	{
-		this->id = id;
 		this->x = x;
 		this->y = y;
 		this->width = width;
@@ -440,17 +482,16 @@ struct RadioButton : Component
 	std::wstring text;
 
 	RadioButton() = default;
-	RadioButton(const RadioButton& rBtn) { init(rBtn.parent, rBtn.text, rBtn.id, rBtn.x, rBtn.y, rBtn.width, rBtn.height, rBtn.type, rBtn.style); }
-	RadioButton& operator= (const RadioButton& rBtn) { init(rBtn.parent, rBtn.text, rBtn.id, rBtn.x, rBtn.y, rBtn.width, rBtn.height, rBtn.type, rBtn.style); return *this; }
+	RadioButton(const RadioButton& rBtn) { init(rBtn.parent, rBtn.text, rBtn.x, rBtn.y, rBtn.width, rBtn.height, rBtn.type, rBtn.style); }
+	RadioButton& operator= (const RadioButton& rBtn) { init(rBtn.parent, rBtn.text, rBtn.x, rBtn.y, rBtn.width, rBtn.height, rBtn.type, rBtn.style); return *this; }
 
-	RadioButton(HWND parent, const std::wstring& text, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_RADIO)
+	RadioButton(HWND parent, const std::wstring& text, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_RADIO)
 	{
-		init(parent, text, id, x, y, width, height, type, style);
+		init(parent, text, x, y, width, height, type, style);
 	}
 
-	void init(HWND parent, const std::wstring& text, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_RADIO)
+	void init(HWND parent, const std::wstring& text, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_RADIO)
 	{
-		this->id = id;
 		this->x = x;
 		this->y = y;
 		this->width = width;
@@ -483,17 +524,16 @@ struct CheckBox : Component
 	std::wstring text;
 
 	CheckBox() = default;
-	CheckBox(const CheckBox& check) { init(check.parent, check.text, check.id, check.x, check.y, check.width, check.height, check.type, check.style); }
-	CheckBox& operator= (const CheckBox& check) { init(check.parent, check.text, check.id, check.x, check.y, check.width, check.height, check.type, check.style); return *this; }
+	CheckBox(const CheckBox& check) { init(check.parent, check.text, check.x, check.y, check.width, check.height, check.type, check.style); }
+	CheckBox& operator= (const CheckBox& check) { init(check.parent, check.text, check.x, check.y, check.width, check.height, check.type, check.style); return *this; }
 
-	CheckBox(HWND parent, const std::wstring& text, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_CHECK)
+	CheckBox(HWND parent, const std::wstring& text, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_CHECK)
 	{
-		init(parent, text, id, x, y, width, height, type, style);
+		init(parent, text, x, y, width, height, type, style);
 	}
 
-	void init(HWND parent, const std::wstring& text, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_CHECK)
+	void init(HWND parent, const std::wstring& text, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_CHECK)
 	{
-		this->id = id;
 		this->x = x;
 		this->y = y;
 		this->width = width;
@@ -513,6 +553,11 @@ struct CheckBox : Component
 		components.add(parent, this);
 	}
 
+	bool checked()
+	{
+		return SendMessage(handle, BM_GETCHECK, 0, 0) == BST_CHECKED;
+	}
+
 };
 
 // =================== ComboBox ========================
@@ -521,17 +566,16 @@ struct CheckBox : Component
 struct ComboBox : Component
 {
 	ComboBox() = default;
-	ComboBox(const ComboBox& combo) { init(combo.parent, combo.id, combo.x, combo.y, combo.width, combo.height, combo.type, combo.style); }
-	ComboBox& operator= (const ComboBox& combo) { init(combo.parent, combo.id, combo.x, combo.y, combo.width, combo.height, combo.type, combo.style); return *this; }
+	ComboBox(const ComboBox& combo) { init(combo.parent, combo.x, combo.y, combo.width, combo.height, combo.type, combo.style); }
+	ComboBox& operator= (const ComboBox& combo) { init(combo.parent, combo.x, combo.y, combo.width, combo.height, combo.type, combo.style); return *this; }
 
-	ComboBox(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_COMBO)
+	ComboBox(HWND parent, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_COMBO)
 	{
-		init(parent, id, x, y, width, height, type, style);
+		init(parent, x, y, width, height, type, style);
 	}
 
-	void init(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_COMBO)
+	void init(HWND parent, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_COMBO)
 	{
-		this->id = id;
 		this->x = x;
 		this->y = y;
 		this->width = width;
@@ -562,7 +606,7 @@ struct ComboBox : Component
 
 	}
 
-	void add(std::vector<std::wstring> elements)
+	void add(const std::vector<std::wstring>& elements)
 	{
 		// Add strings to combobox.
 		for (auto& element : elements)
@@ -620,7 +664,7 @@ struct Label : Component
 	std::wstring text;
 
 	Label() = default;
-	Label(const Label& lable) { init(lable.parent, lable.text, lable.id, lable.x, lable.y, lable.width, lable.height, lable.type, lable.style); }
+	Label(const Label& lable) { init(lable.parent, lable.text, lable.x, lable.y, lable.width, lable.height, lable.type, lable.style); }
 	Label(Label&& label) {
 		parent = label.parent;
 		handle = label.handle;
@@ -636,16 +680,15 @@ struct Label : Component
 		components.add(parent, this);
 	}
 
-	Label& operator= (const Label& lable) { init(lable.parent, lable.text, lable.id, lable.x, lable.y, lable.width, lable.height, lable.type, lable.style); return *this; }
+	Label& operator= (const Label& lable) { init(lable.parent, lable.text, lable.x, lable.y, lable.width, lable.height, lable.type, lable.style); return *this; }
 
-	Label(HWND parent, const std::wstring& text, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LABEL)
+	Label(HWND parent, const std::wstring& text, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LABEL)
 	{
-		init(parent, text, id, x, y, width, height, type, style);
+		init(parent, text, x, y, width, height, type, style);
 	}
 
-	void init(HWND parent, const std::wstring& text, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LABEL)
+	void init(HWND parent, const std::wstring& text, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LABEL)
 	{
-		this->id = id;
 		this->x = x;
 		this->y = y;
 		this->width = width;
@@ -683,7 +726,7 @@ struct Text : Component
 	TCHAR* text = NULL;
 	
 	Text() = default;
-	Text(const Text& text) { init(text.parent, text.id, text.x, text.y, text.width, text.height, text.type, text.style); }
+	Text(const Text& text) { init(text.parent, text.x, text.y, text.width, text.height, text.type, text.style); }
 	Text(Text&& text) {
 		parent = text.parent;
 		handle = text.handle;
@@ -699,18 +742,17 @@ struct Text : Component
 		components.add(parent, this);
 	}
 
-	Text& operator= (const Text& text) { init(text.parent, text.id, text.x, text.y, text.width, text.height, text.type, text.style); return *this; }
+	Text& operator= (const Text& text) { init(text.parent, text.x, text.y, text.width, text.height, text.type, text.style); return *this; }
 
-	Text(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
+	Text(HWND parent, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
 	{
-		init(parent, id, x, y, width, height, type, style);
+		init(parent, x, y, width, height, type, style);
 	}
 
-	void init(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
+	void init(HWND parent, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_EDIT)
 	{
 		text = (TCHAR*)::operator new(cap * sizeof(TCHAR));
 
-		this->id = id;
 		this->x = x;
 		this->y = y;
 		this->width = width;
@@ -796,9 +838,9 @@ struct Table : Component
 		UINT lStyle = WS_CHILD | WS_VISIBLE | SS_CENTER;
 		UINT tStyle = WS_VISIBLE | WS_CHILD | WS_BORDER | ES_CENTER;
 
-		col_labels.resize(max_col, Label(parent, L"", 0, 0, 0, 0, 0, DYNAMIC, lStyle));
-		row_labels.resize(max_row, Label(parent, L"", 0, 0, 0, 0, 0, DYNAMIC, lStyle));
-		table.resize(max_row * max_col, Text(parent, 0, 0, 0, 0, 0, DYNAMIC, tStyle));
+		col_labels.resize(max_col, Label(parent, L"", 0, 0, 0, 0, type, lStyle));
+		row_labels.resize(max_row, Label(parent, L"", 0, 0, 0, 0, type, lStyle));
+		table.resize(max_row * max_col, Text(parent, 0, 0, 0, 0, type, tStyle));
 
 		for (int i = 0; i < max_col; i++)
 			col_labels[i].hide();
@@ -914,12 +956,12 @@ struct ListView : Component
 	int columns = 0;
 
 	ListView() = default;
-	ListView(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LISTVIEW)
+	ListView(HWND parent, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LISTVIEW)
 	{
-		init(parent, id, x, y, width, height, type, style);
+		init(parent, x, y, width, height, type, style);
 	}
 
-	void init(HWND parent, int id, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LISTVIEW)
+	void init(HWND parent, float x, float y, float width = 0.1f, float height = 0.1f, UINT type = DYNAMIC, UINT style = DEF_LISTVIEW)
 	{
 
 		INITCOMMONCONTROLSEX icex;
@@ -939,7 +981,6 @@ struct ListView : Component
 
 		ListView_SetExtendedListViewStyleEx(handle, 0, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
-		this->id = id;
 		this->x = x;
 		this->y = y;
 		this->width = width;
@@ -974,7 +1015,7 @@ struct ListView : Component
 			lvc.pszText = (LPWSTR)columns[iCol].c_str();
 			lvc.cx = colum_size;               // Width of column in pixels.
 
-			if (iCol < columns.size())
+			if (iCol < 2)
 				lvc.fmt = LVCFMT_LEFT;  // Left-aligned column.
 			else
 				lvc.fmt = LVCFMT_RIGHT; // Right-aligned column.
@@ -985,7 +1026,7 @@ struct ListView : Component
 		}
 	}
 
-	void add_row(std::vector<std::wstring> row, bool auto_size = false)
+	void add_row(std::vector<std::wstring> row)
 	{
 		int textMaxLen = 10;
 
@@ -1003,9 +1044,7 @@ struct ListView : Component
 				ListView_SetItemText(handle, iLastIndex, i, (LPWSTR)row[i].c_str());
 		
 			// align the table
-		if (auto_size)
-			for (int i = 0; i < columns; i++)
-				ListView_SetColumnWidth(handle, i, LVSCW_AUTOSIZE);
+		ListView_SetColumnWidth(handle, 1, LVSCW_AUTOSIZE);
 	}
 
 	void add_rows(std::vector<std::vector<std::wstring>> rows)
@@ -1034,7 +1073,7 @@ struct ListView : Component
 
 	void space(int i = 0)
 	{
-		wchar_t buffer[] = L" ";
+		wchar_t buffer[] = L"";
 		
 		for (int j = 1; j < i; j++)
 		{
@@ -1079,6 +1118,7 @@ struct ListView : Component
 void set_font_size(HWND handle, int size)
 {
 	HFONT hFont = CreateFont(size, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Arial");
+	//HFONT hFont SendMessage(handle, WM_GETFONT, 0, 0);
 	SendMessage(handle, WM_SETFONT, WPARAM(hFont), FALSE);
 }
 

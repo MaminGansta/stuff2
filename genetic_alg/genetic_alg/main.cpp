@@ -15,11 +15,21 @@
 std::random_device rd;
 std::mt19937 gen(rd());
 
-// gray code lookup
-unsigned char togray[16] = { 0b0000, 0b0001, 0b0011 ,0b0010,0b0110 ,0b0111 ,0b0101,
-			0b0100 ,0b1100 ,0b1101 ,0b1111 ,0b1110 ,0b1010 ,0b1011 ,0b1001 ,0b1000 };
+// gray code
+unsigned int grayencode(unsigned int g)
+{
+	return g ^ (g >> 1);
+}
 
-unsigned char from_gray[16]{ 0, 1, 3, 2, 6, 7, 5, 4, 12, 13, 15, 14, 10, 11, 9, 8 };
+unsigned int graydecode(unsigned int gray)
+{
+	unsigned int bin;
+	for (bin = 0; gray; gray >>= 1) {
+		bin ^= gray;
+	}
+	return bin;
+}
+
 
 
 struct mybread
@@ -42,6 +52,7 @@ struct mybread
 		int right = (sizeof(char) * 4 * 8) - breakpoint;
 
 		mybread child = { (pair.second.whole << breakpoint >> breakpoint) | (pair.second.whole >> right << right) };
+		
 		// mutaion
 		for (int i = 0; i < 32; i++)
 			if (rand() % 100 < 20)
@@ -52,13 +63,17 @@ struct mybread
 
 	static float fitnes(mybread unit)
 	{
-		float temp = 1.0f / (abs(15 - (unit.chromo[0] + 2*unit.chromo[1] + 5*unit.chromo[2])) + 1);
+		char chromo_encoded[4];
+		*((uint32_t*)chromo_encoded) = grayencode(unit.whole);
+		float temp = 1.0f / (abs(15 - (chromo_encoded[0] + 2* chromo_encoded[1] + 5* chromo_encoded[2])) + 1);
 		return temp;
 	}
 
 	static bool check_res(mybread test)
 	{
-		return (test.chromo[0] + 2 * test.chromo[1] + 5 * test.chromo[2] == 15);
+		char chromo_encoded[4];
+		*((uint32_t*)chromo_encoded) = grayencode(test.whole);
+		return (chromo_encoded[0] + 2 * chromo_encoded[1] + 5 * chromo_encoded[2] == 15);
 	}
 };
 
@@ -181,6 +196,8 @@ small::array<bread, size> gen_alg(small::array<bread, size> start)
 	return step;
 }
 
+#include <bitset>
+
 int main(void)
 {
 	srand(time(0));
@@ -191,10 +208,20 @@ int main(void)
 	for (int i = 0; i < start.cap; i++)
 	{
 		unsigned int temp = rand();
-		start.push_back(mybread{ roll(gen) });
+		start.push_back(mybread{ graydecode(roll(gen)) });
 	}
 
 	auto res = gen_alg(start);
+
+	//uint32_t integer = 56;
+	//uint32_t gray = grayencode(integer);
+	//
+	//std::bitset<32> a(integer);
+	//std::bitset<32> b(gray);
+	//std::bitset<32> c(graydecode(gray));
+	//
+	//std::cout << a  << ' ' << b << ' ' << c;
+
 
 	std::cout  <<  "\nwasted cycles in a random loop: " << cycles;
 	return 0;
