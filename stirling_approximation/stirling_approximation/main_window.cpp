@@ -15,6 +15,7 @@ fImage make_graph(Params p, bool dif, bool der_f, bool der_p)
 	if (p.betta == 0) p.betta = 1;
 	if (p.gamma == 0) p.gamma = 1;
 	if (p.epsilon == 0) p.epsilon = 1;
+	if (p.delata > 0.0 && p.delata < 1.0) p.delata = 0.1;
 
 	if (p.A == 0) p.A = -10;
 	if (p.B == 0) p.B = 10;
@@ -89,7 +90,7 @@ fImage make_graph(Params p, bool dif, bool der_f, bool der_p)
 	{
 		for (int x = 0; x < width; x++)
 		{
-			double xx = x * x_coef + p.A + p.delata;
+			double xx = x * x_coef + p.A + p.delata;//+ 0.5;
 			double y1 = p.alpha * sinf(tanf(p.betta * xx)) + p.epsilon * cosf(p.gamma * xx);
 			y1 = y1 / y_coef + height * float(abs(p.C) / graph_h);
 
@@ -102,17 +103,15 @@ fImage make_graph(Params p, bool dif, bool der_f, bool der_p)
 
 			// draw line if pixels so far
 			if (abs(y - last_y) > 3 && x - last_x == 1)
-				drawLine(graph, last_x, last_y, x, y, fColor(1.0f, 0.4f, 0.1f), 3);
+				drawLine(graph, last_x + p.delata, last_y, x, y, fColor(1.0f, 0.4f, 0.1f), 3);
 
 			last_x = x, last_y = y;
 
 			for (int i = -2; i < 2; i++)
 				for (int j = -3; j < 3; j++)
-					drawPixel(graph, x + i, y + j, fColor(1.0f, 0.4f, 0.1f));
+					drawPixel(graph, x + i + p.delata, y + j, fColor(1.0f, 0.4f, 0.1f));
 		}
 	}
-
-
 
 
 
