@@ -9,18 +9,18 @@ struct Mouse
 
 	static bool pressed(int code)
 	{
-		return buttons[code] > 1;
+		return buttons[code - 512] > 1;
 	}
 
 	static bool clicked(int code)
 	{
-		return buttons[code] == 1;
+		return buttons[code - 512] == 1;
 	}
 
 	static int was_pressed(int code)
 	{
-		bool temp = key_was_pressed[code];
-		key_was_pressed[code] = false;
+		bool temp = key_was_pressed[code - 512];
+		key_was_pressed[code - 512] = false;
 		return temp;
 	}
 };

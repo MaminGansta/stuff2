@@ -245,7 +245,6 @@ struct Window
 	Canvas canvas;
 	int min_w = 0, min_h = 0;
 	int max_w = 600, max_h = 800;
-	bool redraw_hard = false;
 
 	Window() {}
 	Window(
@@ -364,10 +363,6 @@ struct Window
 					window->canvas.resize(hwnd);
 					components.resize(hwnd);
 					break;
-
-				case WM_PAINT:
-					BeginPaint(hwnd, &ps);
-					break;
 			}
 			
 			// user's callback
@@ -375,17 +370,6 @@ struct Window
 			
 			switch (msg)
 			{
-				// Other
-				case WM_PAINT:
-					if (!window->redraw_hard)
-						window->render_canvas(ps.rcPaint);
-					else
-						window->render_canvas();
-					
-					components.redraw(hwnd);
-					EndPaint(hwnd, &ps);
-					return 0;
-
 				case WM_CLOSE:
 					safe_release(window);
 					return 0;
@@ -470,16 +454,17 @@ struct Window
 		SelectObject(memDC, oldBMP);
 		DeleteDC(memDC);
 		ReleaseDC(NULL, hdc);
+	}
 
-		//StretchDIBits(hdc, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height, canvas.data, &canvas.bitmap_info, DIB_RGB_COLORS, SRCCOPY);
+	void render_canvas_direct()
+	{
+		StretchDIBits(hdc, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height, canvas.data, &canvas.bitmap_info, DIB_RGB_COLORS, SRCCOPY);
 	}
 
 	void redraw()
 	{
 		//RedrawWindow(getHWND(), 0, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
-		redraw_hard = true;
 		SendMessage(hwnd, WM_PAINT, 0, 0);
-		redraw_hard = true;
 	}
 
 	int height()
