@@ -192,7 +192,7 @@ struct Simplex_window : Window
 		set_font_size(lPivot.handle, 25);
 		cPivot.init(getHWND(), 0, 0.7f, 0.35f, 0.15f, 0.05f, RESIZABLE);
 
-		bPriv.init(getHWND(), L"Предидущий", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
+		bPriv.init(getHWND(), L"предыдущий", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
 		bNext.init(getHWND(), L"Следующий", 101, 0.85f, 0.4f, 0.15f, 0.05f, RESIZABLE);
 		bAuto.init(getHWND(), L"Авто", 102, 0.7f, 0.45f, 0.15f, 0.05f, RESIZABLE);
 
@@ -454,7 +454,7 @@ struct Simplex_window : Window
 		cPivot.clear();
 		for (pivot p : steps.back().pivots)
 		{
-			swprintf_s(buffer, L"col %d, row %d)", p.x, p.y);
+			swprintf_s(buffer, L"col %d, row %d", p.x, p.y);
 			cPivot.add(buffer);
 		}
 	}
