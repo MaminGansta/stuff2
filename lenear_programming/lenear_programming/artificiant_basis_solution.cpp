@@ -1,70 +1,4 @@
 
-
-
-
-
-
-LRESULT ProcessCustomDraw(LPARAM lParam) {
-	LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
-	int iSelect = 1;
-
-	switch (lplvcd->nmcd.dwDrawStage)
-	{
-	case CDDS_PREPAINT: //Before the paint cycle begins
-		//request notifications for individual listview items
-		return CDRF_NOTIFYITEMDRAW;
-
-	case CDDS_ITEMPREPAINT: //Before an item is drawn
-		if (((int)lplvcd->nmcd.dwItemSpec % 2) == 0)
-		{
-			//customize item appearance
-			lplvcd->clrText = RGB(255, 0, 0);
-			lplvcd->clrTextBk = RGB(200, 200, 200);
-			return CDRF_NEWFONT;
-		}
-		else {
-			lplvcd->clrText = RGB(0, 0, 255);
-			lplvcd->clrTextBk = RGB(255, 255, 255);
-
-			return CDRF_NEWFONT;
-		}
-		break;
-
-		//Before a subitem is drawn
-	case CDDS_SUBITEM | CDDS_ITEMPREPAINT:
-		if (iSelect == (int)lplvcd->nmcd.dwItemSpec)
-		{
-			if (0 == lplvcd->iSubItem)
-			{
-				//customize subitem appearance for column 0
-				lplvcd->clrText = RGB(255, 0, 0);
-				lplvcd->clrTextBk = RGB(255, 255, 255);
-
-				//To set a custom font:
-				//SelectObject(lplvcd->nmcd.hdc, 
-				//    <your custom HFONT>);
-
-				return CDRF_NEWFONT;
-			}
-			else if (1 == lplvcd->iSubItem)
-			{
-				//customize subitem appearance for columns 1..n
-				//Note: setting for column i 
-				//carries over to columnn i+1 unless
-				//      it is explicitly reset
-				lplvcd->clrTextBk = RGB(255, 0, 0);
-				lplvcd->clrTextBk = RGB(255, 255, 255);
-
-				return CDRF_NEWFONT;
-			}
-		}
-	}
-	return CDRF_DODEFAULT;
-}
-
-
-
-
 template <typename T>
 struct Artificiant_basis_window : Window
 {
@@ -119,11 +53,73 @@ struct Artificiant_basis_window : Window
 
 						doutput("%d  %d\n", row, col);
 					}
-					if (((LPNMHDR)lParam)->code == NM_CUSTOMDRAW) {
-						SetWindowLong(hwnd, DWL_MSGRESULT,
-							(LONG)ProcessCustomDraw(lParam));
-						return TRUE;
-					}
+				
+					if (((LPNMHDR)lParam)->code == NM_CUSTOMDRAW) 
+					{
+			            LPNMLVCUSTOMDRAW  lplvcd = (LPNMLVCUSTOMDRAW)lParam;
+			            switch (lplvcd->nmcd.dwDrawStage)
+						{
+							case CDDS_PREPAINT:
+							    return CDRF_NOTIFYITEMDRAW;
+							    break;
+							case CDDS_ITEMPREPAINT:
+							    return CDRF_NOTIFYSUBITEMDRAW;
+							    break;
+							    //There would be some bits here for subitem drawing but they don't seem neccesary as you seem to want a full row color only
+							case CDDS_SUBITEM | CDDS_ITEMPREPAINT:
+
+								bool res = false;
+								if (window->steps.back().pivots.size() == 0)
+									res = window->if_result(window->steps.back());
+
+								int col = lplvcd->iSubItem;
+								int row = lplvcd->nmcd.dwItemSpec;
+
+								int last_row = window->table.rows();
+								row = row - (last_row - window->steps.back().rows()) + 1;
+
+								bool flag_pivot = false;
+								for (auto& pivot : window->steps.back().pivots)
+								{
+									if (col == pivot.x && row == pivot.y)
+									{
+										flag_pivot = true;
+										break;
+									}
+								}
+
+								if (flag_pivot)
+								{
+									lplvcd->clrText = RGB(0, 0, 0);
+									lplvcd->clrTextBk = RGB(150, 255, 150);
+									return CDRF_NEWFONT;
+									break;
+								}
+								else if (window->steps.back().pivots.size() == 0)
+								{
+									if (res)
+									{
+										lplvcd->clrText = RGB(0, 0, 0);
+										lplvcd->clrTextBk = RGB(150, 255, 150);
+										return CDRF_NEWFONT;
+									}
+									else
+									{
+										lplvcd->clrText = RGB(0, 0, 0);
+										lplvcd->clrTextBk = RGB(255, 150, 150);
+										return CDRF_NEWFONT;
+									}
+								}
+								else
+								{
+									lplvcd->clrText = RGB(0, 0, 0);
+									lplvcd->clrTextBk = RGB(255, 255, 255);
+									return CDRF_NEWFONT;
+									break;
+								}
+			            }
+			            return TRUE;
+			        }
 				}break;
 
 				case WM_COMMAND:
@@ -403,6 +399,15 @@ struct Artificiant_basis_window : Window
 			swprintf_s(buffer, L"col %d, row %d", p.x, p.y);
 			cPivot.add(buffer);
 		}
+	}
+
+	bool if_result(Simplex_step<T>& step)
+	{
+		bool res = true;
+		for (int i = 1; i < step.cols(); i++)
+			if (step[step.rows() - 1][i] < 0)
+				res = false;
+		return res;
 	}
 
 };

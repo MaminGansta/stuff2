@@ -65,37 +65,105 @@ struct Simplex_window : Window
 
 				switch (msg)
 				{
-					case WM_NOTIFY:
+				case WM_NOTIFY:
+				{
+					if (((LPNMHDR)lParam)->code == NM_CLICK && ((LPNMHDR)lParam)->hwndFrom == window->table.handle)
 					{
-						if (((LPNMHDR)lParam)->code == NM_CLICK && ((LPNMHDR)lParam)->hwndFrom == window->table.handle)
+						int col = ((LPNMLISTVIEW)lParam)->iSubItem;
+						int row = ((LPNMLISTVIEW)lParam)->iItem;
+
+						// find col and row in current table on the screen
+						Simplex_step<T>& last_step = window->steps.back();
+						int last_row = window->table.rows();
+						row = row - (last_row - last_step.rows()) + 1;
+
+						// find pivot in existed
+						pivot* p = NULL;
+						int ind = 0;
+						for (auto& pivot : last_step.pivots)
 						{
-							int col = ((LPNMLISTVIEW)lParam)->iSubItem;
-							int row = ((LPNMLISTVIEW)lParam)->iItem;
-
-							// find col and row in current table on the screen
-							Simplex_step<T>& last_step = window->steps.back();
-							int last_row = window->table.rows();
-							row = row - (last_row - last_step.rows()) + 1;
-
-							// find pivot in existed
-							pivot* p = NULL;
-							int ind = 0;
-							for (auto& pivot : last_step.pivots)
+							if (pivot.x == col && pivot.y == row)
 							{
-								if (pivot.x == col && pivot.y == row)
+								p = &pivot;
+								break;
+							}
+							ind += 1;
+						}
+
+						if (p != NULL)
+							window->cPivot.set_selected(ind);
+
+						doutput("%d  %d\n", row, col);
+					}
+
+					if (((LPNMHDR)lParam)->code == NM_CUSTOMDRAW)
+					{
+						LPNMLVCUSTOMDRAW  lplvcd = (LPNMLVCUSTOMDRAW)lParam;
+						switch (lplvcd->nmcd.dwDrawStage)
+						{
+							case CDDS_PREPAINT:
+								return CDRF_NOTIFYITEMDRAW;
+								break;
+							case CDDS_ITEMPREPAINT:
+								return CDRF_NOTIFYSUBITEMDRAW;
+								break;
+								//There would be some bits here for subitem drawing but they don't seem neccesary as you seem to want a full row color only
+							case CDDS_SUBITEM | CDDS_ITEMPREPAINT:
+
+								bool res = false;
+								if (window->steps.back().pivots.size() == 0)
+									res = window->if_result(window->steps.back());
+
+								int col = lplvcd->iSubItem;
+								int row = lplvcd->nmcd.dwItemSpec;
+
+								int last_row = window->table.rows();
+								row = row - (last_row - window->steps.back().rows()) + 1;
+
+								bool flag_pivot = false;
+								for (auto& pivot : window->steps.back().pivots)
 								{
-									p = &pivot;
+									if (col == pivot.x && row == pivot.y)
+									{
+										flag_pivot = true;
+										break;
+									}
+								}
+
+								if (flag_pivot)
+								{
+									lplvcd->clrText = RGB(0, 0, 0);
+									lplvcd->clrTextBk = RGB(150, 255, 150);
+									return CDRF_NEWFONT;
 									break;
 								}
-								ind += 1;
+								else if (window->steps.back().pivots.size() == 0)
+								{
+									if (res)
+									{
+										lplvcd->clrText = RGB(0, 0, 0);
+										lplvcd->clrTextBk = RGB(150, 255, 150);
+										return CDRF_NEWFONT;
+									}
+									else
+									{
+										lplvcd->clrText = RGB(0, 0, 0);
+										lplvcd->clrTextBk = RGB(255, 150, 150);
+										return CDRF_NEWFONT;
+									}
+								}
+								else
+								{
+									lplvcd->clrText = RGB(0, 0, 0);
+									lplvcd->clrTextBk = RGB(255, 255, 255);
+									return CDRF_NEWFONT;
+									break;
+								}
 							}
-
-							if (p != NULL)
-								window->cPivot.set_selected(ind);
-
-							doutput("%d  %d\n", row, col);
+						return TRUE;
 						}
 					}break;
+
 					case WM_COMMAND:
 					{
 						if (LOWORD(wParam) == window->bNext.id)
@@ -389,6 +457,15 @@ struct Simplex_window : Window
 			swprintf_s(buffer, L"col %d, row %d)", p.x, p.y);
 			cPivot.add(buffer);
 		}
+	}
+
+	bool if_result(Simplex_step<T>& step)
+	{
+		bool res = true;
+		for (int i = 1; i < step.cols(); i++)
+			if (step[step.rows() - 1][i] < 0)
+				res = false;
+		return res;
 	}
 
 

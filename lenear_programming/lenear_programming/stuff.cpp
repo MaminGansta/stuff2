@@ -29,6 +29,12 @@ struct Fraction
 		int g = gcd(t, b);
 		top = t / g;
 		bottom = b / g;
+
+		if (bottom < 0)
+		{
+			top = -top;
+			bottom = -bottom;
+		}
 	}
 	Fraction& operator= (const Fraction& f) { top = f.top;  bottom = f.bottom; return *this; }
 	Fraction& operator-= (const Fraction& f)
@@ -112,7 +118,13 @@ struct Fraction
 
 	Fraction operator* (Fraction other)
 	{
-		return Fraction(top * other.top, bottom * other.bottom);
+		Fraction res(top * other.top, bottom * other.bottom);
+		if (res.bottom < 0)
+		{
+			res.top = -res.top;
+			res.bottom = -res.bottom;
+		}
+		return res;
 	}
 
 	Fraction operator/ (Fraction other)
