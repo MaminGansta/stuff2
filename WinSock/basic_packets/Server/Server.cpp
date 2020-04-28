@@ -1,9 +1,13 @@
 
-#include <stdio.h>
-#pragma warning (disable: 4996)
-
 #pragma comment(lib, "ws2_32.lib")
 #include <winsock2.h>
+
+#include <windows.h>
+#include <stdio.h>
+#include <utility>
+#include <atomic>
+#pragma warning (disable: 4996)
+
 
 #define DEFAULT_BUFFER 4096
 
@@ -16,15 +20,51 @@ enum Packet
 {
 	P_InitConnection,
 	P_ChatMessage,
+	P_Exit,
 	P_Test
 };
 
+bool wm_close = false;
+HANDLE threads[10];
 SOCKET Connections[10];
-int nConnections = 0;
+std::atomic_int nConnections = 0;
+
+
+// console callback
+BOOL WINAPI console_callback(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType)
+	{
+		case CTRL_CLOSE_EVENT:
+			// if console was closed, notify clients and clear all stuff
+			for (int i = 0; i < nConnections; i++)
+			{
+				Packet packet_exit = P_Exit;
+				send(Connections[i], (char*)&packet_exit, sizeof(Packet), NULL);
+			}
+
+			for (int i = 0; i < nConnections; i++)
+			{
+				closesocket(Connections[i]);
+
+				TerminateThread(threads[i], 0);
+				CloseHandle(threads[i]);
+			}
+			WSACleanup();
+			wm_close = true;
+			return TRUE;
+
+		default:
+			return FALSE;
+	}
+}
+
 
 
 bool ProccesPacket(int index, Packet packettype)
 {
+	printf("packettype: %d\n", packettype);
+
 	switch (packettype)
 	{
 		case P_ChatMessage:
@@ -42,8 +82,20 @@ bool ProccesPacket(int index, Packet packettype)
 				}
 			}
 		}break;
+
+		case P_Exit:
+		{
+			std::swap(Connections[index], Connections[nConnections]);
+			std::swap(threads[index], threads[nConnections]);
+
+			closesocket(Connections[nConnections]);
+			CloseHandle(threads[nConnections]);
+			nConnections--;
+		}return false;
+
 		default:
 			printf("unknow packet\n");
+			closesocket(Connections[index]);
 			return false;
 	}
 	return true;
@@ -60,30 +112,33 @@ void ClientHandler(int index)
 		if (!ProccesPacket(index, packettype))
 			break;
 	}
-	closesocket(Connections[index]);
 }
 
 
 int main(void)
 {
+	// set controll callback funtion for this console window
+	if (!SetConsoleCtrlHandler(console_callback, TRUE))
+	{
+		printf("\nERROR: Could not set control handler");
+		return 1;
+	}
+
 
 	WSADATA	wsd;
-	char szBuffer[DEFAULT_BUFFER];
-
-	int iPort = DEFAULT_PORT;  // Порт сервера
-	DWORD dwCount = DEFAULT_COUNT; // Сколько  отправить  
-	
+	// start up the WSA lib
 	if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
 	{
 		printf("Failed to load Winsock library!\n");
 		return 1;
 	}
 
+
 	SOCKADDR_IN server;
 	hostent* host = NULL;
 
 	server.sin_family = AF_INET;
-	server.sin_port = htons(iPort);
+	server.sin_port = htons(DEFAULT_PORT);
 	server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 
@@ -95,9 +150,12 @@ int main(void)
 	for (int i = 0; i < 10; i++)
 	{
 		int server_size = sizeof(server);
-		Connections[i] = accept(sListener, (SOCKADDR*)&server, &server_size);
+		Connections[nConnections] = accept(sListener, (SOCKADDR*)&server, &server_size);
 
-		if (Connections[i] == 0)
+		// if window was closed by x
+		if (wm_close) break;
+
+		if (Connections[nConnections] == 0)
 		{
 			printf("connection Error\n");
 			i--;
@@ -108,13 +166,26 @@ int main(void)
 
 		char msg[128] = "Hello, user";
 		Packet packettype_send = P_ChatMessage;
-		send(Connections[i], (char*)&packettype_send, sizeof(Packet), NULL);
-		send(Connections[i], msg, sizeof(msg), NULL);
+		send(Connections[nConnections], (char*)&packettype_send, sizeof(Packet), NULL);
+		send(Connections[nConnections], msg, sizeof(msg), NULL);
 
+		int id = nConnections;
+		threads[nConnections] = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)id, NULL, NULL);
 		nConnections++;
-		CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)i, NULL, NULL);
+	}
+
+
+	// clean up
+	for (int i = 0; i < nConnections; i++)
+	{
+		Packet packet_close = P_Exit;
+		send(Connections[i], (char*)&packet_close, sizeof(Packet), NULL);
+		closesocket(Connections[i]);
+
+		TerminateThread(threads[i], 0);
+		CloseHandle(threads[i]);
 	}
 	
-	system("pause");
+	WSACleanup();
 	return 0;
 }
