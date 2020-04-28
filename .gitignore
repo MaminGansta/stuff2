@@ -1,6 +1,8 @@
 *.xcodepr
 /dataBase/venv/*
 */.vs*/*
+*/*/.vs/*
+.vs/
 */venv/*
 # Created by http://www.gitignore.io
 
