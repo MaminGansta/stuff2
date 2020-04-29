@@ -7,8 +7,7 @@
 
 #define DEFAULT_BUFFER 4096
 
-#define DEFAULT_COUNT       20
-#define DEFAULT_PORT        5150
+#define DEFAULT_PORT        5678
 
 enum Packet
 {
@@ -34,11 +33,6 @@ BOOL WINAPI console_callback(DWORD fdwCtrlType)
 		// if console was closed, notify server and clear all stuff
 		Packet packet_exit = P_Exit;
 		send(Connection, (char*)&packet_exit, sizeof(Packet), NULL);
-
-		TerminateThread(server_callback, 0);
-		CloseHandle(server_callback);
-		closesocket(Connection);
-		WSACleanup();
 		return TRUE;
 	}
 
@@ -66,7 +60,6 @@ bool ProccesPacket(Packet packettype)
 
 		default:
 			printf("unkown packet\n");
-			closesocket(Connection);
 			return false;
 	}
 }
@@ -136,7 +129,6 @@ int main(void)
 		{
 			Packet exit_packet = P_Exit;
 			send(Connection, (char*)&exit_packet, sizeof(Packet), NULL);
-			shutdown(Connection, SD_BOTH);
 			break;
 		}
 		
@@ -146,6 +138,8 @@ int main(void)
 		Sleep(100);
 	}
 
+	// clean up
+	shutdown(Connection, SD_BOTH);
 	CloseHandle(server_callback);
 	closesocket(Connection);
 	WSACleanup();

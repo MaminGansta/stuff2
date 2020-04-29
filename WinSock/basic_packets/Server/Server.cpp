@@ -9,12 +9,7 @@
 #pragma warning (disable: 4996)
 
 
-#define DEFAULT_BUFFER 4096
-
-#define DEFAULT_COUNT       20
-#define DEFAULT_PORT        5150
-#define DEFAULT_BUFFER      2048
-
+#define DEFAULT_PORT	5678
 
 enum Packet
 {
@@ -35,22 +30,15 @@ BOOL WINAPI console_callback(DWORD fdwCtrlType)
 {
 	switch (fdwCtrlType)
 	{
+		// if console was closed
 		case CTRL_CLOSE_EVENT:
-			// if console was closed, notify clients and clear all stuff
 			for (int i = 0; i < nConnections; i++)
 			{
+				// notify clients for the end of connection
 				Packet packet_exit = P_Exit;
 				send(Connections[i], (char*)&packet_exit, sizeof(Packet), NULL);
 			}
 
-			for (int i = 0; i < nConnections; i++)
-			{
-				closesocket(Connections[i]);
-
-				TerminateThread(threads[i], 0);
-				CloseHandle(threads[i]);
-			}
-			WSACleanup();
 			wm_close = true;
 			return TRUE;
 
@@ -91,6 +79,7 @@ bool ProccesPacket(int index, Packet packettype)
 			closesocket(Connections[nConnections]);
 			CloseHandle(threads[nConnections]);
 			nConnections--;
+			printf("client disconnect\n");
 		}return false;
 
 		default:
@@ -178,10 +167,8 @@ int main(void)
 	// clean up
 	for (int i = 0; i < nConnections; i++)
 	{
-		Packet packet_close = P_Exit;
-		send(Connections[i], (char*)&packet_close, sizeof(Packet), NULL);
+		shutdown(Connections[i], SD_BOTH);
 		closesocket(Connections[i]);
-
 		TerminateThread(threads[i], 0);
 		CloseHandle(threads[i]);
 	}
