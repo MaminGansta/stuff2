@@ -5,9 +5,7 @@
 #pragma comment(lib, "ws2_32.lib")
 #include <winsock2.h>
 
-#define DEFAULT_BUFFER 4096
-
-#define DEFAULT_PORT        5678
+#define DEFAULT_PORT 5678
 
 enum Packet
 {
@@ -102,7 +100,7 @@ int main(void)
 
 	client.sin_family = AF_INET;
 	client.sin_port = htons(DEFAULT_PORT);
-	client.sin_addr.s_addr = inet_addr("192.168.0.104");
+	client.sin_addr.s_addr = inet_addr("109.161.95.195");
 
 
 	Connection = socket(AF_INET, SOCK_STREAM, NULL);

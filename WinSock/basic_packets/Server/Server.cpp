@@ -8,7 +8,6 @@
 #include <atomic>
 #pragma warning (disable: 4996)
 
-
 #define DEFAULT_PORT	5678
 
 enum Packet
