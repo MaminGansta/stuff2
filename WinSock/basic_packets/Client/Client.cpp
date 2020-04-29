@@ -109,7 +109,7 @@ int main(void)
 
 	client.sin_family = AF_INET;
 	client.sin_port = htons(DEFAULT_PORT);
-	client.sin_addr.s_addr = inet_addr("127.0.0.1");
+	client.sin_addr.s_addr = inet_addr("192.168.0.104");
 
 
 	Connection = socket(AF_INET, SOCK_STREAM, NULL);
