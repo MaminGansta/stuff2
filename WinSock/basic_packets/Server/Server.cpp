@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <utility>
 #include <atomic>
+#include <shared_mutex>
 #pragma warning (disable: 4996)
 
 #define DEFAULT_PORT	5678
@@ -22,6 +23,7 @@ bool wm_close = false;
 HANDLE threads[10];
 SOCKET Connections[10];
 std::atomic_int nConnections = 0;
+std::shared_mutex mutex;
 
 
 // console callback
@@ -59,6 +61,9 @@ bool ProccesPacket(int index, Packet packettype)
 			char msg[128];
 			recv(Connections[index], msg, sizeof(msg), NULL);
 
+			// if add new client (to the array) or disconect client (remove from the array)
+			std::shared_lock<std::shared_mutex> lock(mutex);
+
 			Packet packettype_send = P_ChatMessage;
 			for (int i = 0; i < nConnections; i++)
 			{
@@ -72,6 +77,7 @@ bool ProccesPacket(int index, Packet packettype)
 
 		case P_Exit:
 		{
+			std::unique_lock<std::shared_mutex> lock(mutex);
 			std::swap(Connections[index], Connections[nConnections]);
 			std::swap(threads[index], threads[nConnections]);
 
@@ -138,7 +144,10 @@ int main(void)
 	for (int i = 0; i < 10; i++)
 	{
 		int server_size = sizeof(server);
-		Connections[nConnections] = accept(sListener, (SOCKADDR*)&server, &server_size);
+		SOCKET connection = accept(sListener, (SOCKADDR*)&server, &server_size);
+		
+		std::unique_lock<std::shared_mutex> lock(mutex);
+		Connections[nConnections] = connection;
 
 		// if window was closed by x
 		if (wm_close) break;
