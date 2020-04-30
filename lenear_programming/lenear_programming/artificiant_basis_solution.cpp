@@ -394,9 +394,13 @@ struct Artificiant_basis_window : Window
 
 		// set pivots
 		cPivot.clear();
+		Simplex_step<T>& last_step = steps.back();
+
 		for (pivot p : steps.back().pivots)
 		{
-			swprintf_s(buffer, L"col %d, row %d", p.x, p.y);
+			int temp1 = last_step[0][p.x];
+			int temp2 = last_step[p.y][0];
+			swprintf_s(buffer, L"X%d, X%d", temp1, temp2);
 			cPivot.add(buffer);
 		}
 	}

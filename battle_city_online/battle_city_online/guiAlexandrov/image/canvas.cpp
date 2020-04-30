@@ -10,7 +10,7 @@ struct Canvas
 
 	Canvas()
 	{
-#ifdef CANVAS_MAX_SIZE
+#ifdef FULL_SCREAN_CANVAS
 		capacity = GetSystemMetrics(SM_CXSCREEN) * GetSystemMetrics(SM_CYSCREEN);
 		data = new Color[capacity];
 #endif
@@ -46,13 +46,8 @@ struct Canvas
 
 	Color& operator [] (int inx)
 	{
-		assert((uint32_t)inx < capacity);
+		assert((uint32_t)inx < whole_size);
 		return data[inx];
-	}
-
-	void operator = (Image image)
-	{
-		memmove(data, image.data, sizeof(Color) * image.width * image.height);
 	}
 
 	void reserve(int capacity)

@@ -1,7 +1,8 @@
 
-#define CANVAS_MAX_SIZE
+#define FULL_SCREAN_CANVAS
 #include "guiAlexandrov/include.h"
 
+bool runnig = false;
 
 enum Window_stage
 {
@@ -73,7 +74,7 @@ struct Battle_city_window : Window
 						// Main menu
 						if (LOWORD(wParam) == window->bClose.id)
 						{
-							safe_release(window);
+							window->close();
 							break;
 						}
 
@@ -103,9 +104,6 @@ struct Battle_city_window : Window
 
 					case WM_PAINT:
 					{
-						// render game in another place
-						//if (window->stage == Stage_Game) break;
-
 						PAINTSTRUCT ps;
 						BeginPaint(hwnd, &ps);
 						
@@ -120,9 +118,9 @@ struct Battle_city_window : Window
 
 					case WM_CLOSE:
 					{
-						TerminateThread(window->game_loop_thread, 0);
-						CloseHandle(window->game_loop_thread);
-					}
+						runnig = false;
+						WaitForSingleObject(window->game_loop_thread, INFINITE);
+					}break;
 
 					default:
 						return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -271,6 +269,7 @@ struct Battle_city_window : Window
 };
 
 
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE not_used, LPSTR cmd_args, int show_mode)
 {
 	al_init(hInstance);
@@ -290,6 +289,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE not_used, LPSTR cmd_args, int 
 
 
 
+
+
+
+
+
+
+
+
+struct player
+{
+	float pos_x = 0, pos_y = 0;
+	float speed = 1.0f;
+};
+
+
+
+
 /*
 	Game loop.
 	Render game to the context has been set.
@@ -302,11 +318,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE not_used, LPSTR cmd_args, int 
 
 void game_loop(Battle_city_window* window)
 {
+	runnig = true;
+
+	// just buffer for all
+	wchar_t buffer[128];
+
+	// every 2s change fps info
+	float fps_info_timeout = 2.0f;
+
 	// context to render
 	Canvas& surface = window->canvas;
 
+	// clear input data
+	Input::keys_buffer_clear();
+
+	player p{0.5f, 0.5f};
+
+
+	Timer timer;
+
 	while (true)
 	{
+
+		if (!runnig) break;
+
+		// Handle input
 		// exit from the game
 		if (Input::was_pressed(VK_ESCAPE))
 		{
@@ -314,6 +350,19 @@ void game_loop(Battle_city_window* window)
 			window->redraw();
 			break;
 		}
+
+		if (Input::pressed(VK_UP))
+			p.pos_y += p.speed * timer.elapsed;
+
+		if (Input::pressed(VK_DOWN))
+			p.pos_y -= p.speed * timer.elapsed;
+
+		if (Input::pressed(VK_RIGHT))
+			p.pos_x += p.speed * timer.elapsed;
+
+		if (Input::pressed(VK_LEFT))
+			p.pos_x -= p.speed * timer.elapsed;
+
 
 		// Game logic
 
@@ -323,11 +372,22 @@ void game_loop(Battle_city_window* window)
 		// clr screan
 		draw_filled_rect_async(surface, 0.0f, 0.0f, 1.0f, 1.0f, Color(255));
 
+		// draw player
+		draw_filled_rect_async(surface, p.pos_x, p.pos_y, 0.1f, 0.1f, Color(0));
 
-		draw_filled_rect(surface, 0.0f, 0.0f, 0.5f, 0.5f, Color(255, 0, 0));
+
+		// get ellapsed time
+		timer.update();
+
+		// set window title
+		if ((fps_info_timeout -= timer.elapsed) < 0.0f)
+		{
+			swprintf_s(buffer, L"%d", timer.FPS);
+			fps_info_timeout = 2.0f;
+		}
+		render_text(surface, 0.94f, 0.94f, buffer, Color(240, 150, 0), get_def_font(25));
 
 
-		
 		// Render canvas to the window
 		window->render_canvas();
 	}

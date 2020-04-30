@@ -420,6 +420,7 @@ struct Window
 	void close()
 	{
 		SendMessage(hwnd, WM_CLOSE, 0, 0);
+		SendMessage(hwnd, WM_DESTROY, 0, 0);
 	}
 
 	void render_canvas(const PAINTSTRUCT& ps)

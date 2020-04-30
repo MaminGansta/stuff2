@@ -56,7 +56,7 @@ struct Input
 
 	static bool pressed(int key_code)
 	{
-		return keys[key_code] > 1;
+		return keys[key_code] > 0;
 	}
 
 	static bool clicked(int key_code)
@@ -70,6 +70,11 @@ struct Input
 		bool temp = key_was_pressed[key_code];
 		key_was_pressed[key_code] = false;
 		return  temp;
+	}
+
+	static void keys_buffer_clear()
+	{
+		memset(keys, 0, sizeof(keys));
 	}
 
 

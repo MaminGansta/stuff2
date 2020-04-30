@@ -47,15 +47,15 @@ struct Timer
 	high_resolution_clock::time_point privius;
 
 	int FPS = 0;
-	float FrameTimeAVG = 0;
+	float FrameTimeAVG = 0.0f;
 
-	float m_timeSum = 0;
+	float m_timeSum = 0.0f;
 	int m_Frames = 0;
 
 	bool m_frameLock;
-	float m_frameLock_time = 0.016777;
+	float m_frameLock_time = 0.016777f;
 
-	float elapsed{ 0 };
+	float elapsed = 0.0f;
 
 
 	inline Timer(bool frame_lock = false) : m_frameLock(frame_lock)

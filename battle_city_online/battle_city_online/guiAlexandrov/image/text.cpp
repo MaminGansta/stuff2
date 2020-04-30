@@ -79,6 +79,7 @@ void WriteTextOnByteArray(int nImageWidth, int nImageHeight, int x, int y, void*
 	GetDIBits(memDC, hBmp, 0, bmpInfo.bmiHeader.biHeight, pImageData, &bmpInfo, DIB_RGB_COLORS);
 
 
+	DeleteObject(hFont);
 	DeleteObject(hBmp);
 	DeleteDC(memDC);
 	ReleaseDC(NULL, hdc);

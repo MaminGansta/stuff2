@@ -78,6 +78,7 @@ private:
 		for (std::thread& thread : pool)
 			thread.join();
 	}
+
 };
 
 

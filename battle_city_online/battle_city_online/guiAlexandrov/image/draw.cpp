@@ -136,7 +136,7 @@ void draw_filled_rect(Image_type& surface, float fx, float fy, float fwidth, flo
 	int height = surface.height * fheight;
 
 	for (int y = y0; y < y0 + height; y++)
-		for (int x = x0; x < width; x++)
+		for (int x = x0; x < x0 + width; x++)
 			drawPixel(surface, x, y, color);
 }
 
