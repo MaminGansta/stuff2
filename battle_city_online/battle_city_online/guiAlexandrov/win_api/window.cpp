@@ -451,8 +451,7 @@ struct Window
 
 	void redraw()
 	{
-		//RedrawWindow(getHWND(), 0, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
-		SendMessage(hwnd, WM_PAINT, 0, 0);
+		RedrawWindow(getHWND(), 0, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
 	}
 
 	int height()

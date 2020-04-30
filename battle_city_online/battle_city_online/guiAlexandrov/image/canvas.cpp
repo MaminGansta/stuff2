@@ -1,12 +1,20 @@
 
 struct Canvas
 {
-	int height, width;
-	int whole_size;
+	int height = 0, width = 0;
+	int whole_size = 0;
 	int capacity = 0;
 	Color* data = nullptr;
 
 	BITMAPINFO bitmap_info;
+
+	Canvas()
+	{
+#ifdef CANVAS_MAX_SIZE
+		capacity = GetSystemMetrics(SM_CXSCREEN) * GetSystemMetrics(SM_CYSCREEN);
+		data = new Color[capacity];
+#endif
+	}
 
 	~Canvas() {
 		safe_releaseArr(data);
@@ -38,8 +46,13 @@ struct Canvas
 
 	Color& operator [] (int inx)
 	{
-		assert((uint32_t)inx < whole_size);
+		assert((uint32_t)inx < capacity);
 		return data[inx];
+	}
+
+	void operator = (Image image)
+	{
+		memmove(data, image.data, sizeof(Color) * image.width * image.height);
 	}
 
 	void reserve(int capacity)
