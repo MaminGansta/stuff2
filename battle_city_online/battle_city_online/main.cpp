@@ -318,7 +318,12 @@ struct player
 
 void game_loop(Battle_city_window* window)
 {
-	Image tank(L"sprites/tank_sprite2.png");
+	float angle = 0;
+	int tank_sprite = 0;
+	Image tank[2];
+	tank[0].open(L"sprites/tank_sprite1.png");
+	tank[1].open(L"sprites/tank_sprite2.png");
+
 
 	runnig = true;
 
@@ -354,16 +359,28 @@ void game_loop(Battle_city_window* window)
 		}
 
 		if (Input::pressed(VK_UP))
+		{
 			p.pos_y += p.speed * timer.elapsed;
+			angle = PI * 1.5f;
+		}
 
 		if (Input::pressed(VK_DOWN))
+		{
 			p.pos_y -= p.speed * timer.elapsed;
+			angle = PI / 2;
+		}
 
 		if (Input::pressed(VK_RIGHT))
+		{
 			p.pos_x += p.speed * timer.elapsed;
+			angle = 0;
+		}
 
 		if (Input::pressed(VK_LEFT))
+		{
 			p.pos_x -= p.speed * timer.elapsed;
+			angle = PI;
+		}
 
 
 		// Game logic
@@ -377,7 +394,7 @@ void game_loop(Battle_city_window* window)
 		// draw player
 		//draw_filled_rect_async(surface, p.pos_x, p.pos_y, 0.1f, 0.1f, Color(0));
 
-		draw_image_async_a_rotate(surface, tank, p.pos_x, p.pos_y, 0.1f, 0.1f, get_time());
+		draw_image_async_a_rotate(surface, tank[tank_sprite], p.pos_x, p.pos_y, 0.1f, 0.1f, angle);
 
 		// get ellapsed time
 		timer.update();
