@@ -180,9 +180,6 @@ void draw_image(Surface_type& surface, const Image_type& image,
 	int pos_x = surface.width * fpos_x;
 	int pos_y = surface.height * fpos_y;
 
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
-
 	int width = surface.width * fwidth;
 	int height = surface.height * fheight;
 
@@ -206,9 +203,6 @@ void draw_image_async(Surface_type& surface, const Image_type& image,
 
 	int pos_x = surface.width * fpos_x;
 	int pos_y = surface.height * fpos_y;
-
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
 
 	int width = surface.width * fwidth;
 	int height = surface.height * fheight;
@@ -245,9 +239,6 @@ void draw_image_async_direct(Surface_type& surface, const Image_type& image,
 
 	int pos_x = surface.width * fpos_x;
 	int pos_y = surface.height * fpos_y;
-
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
 
 	int width = surface.width * fwidth;
 	int height = surface.height * fheight;
@@ -462,9 +453,6 @@ void draw_image_a(Surface_type& surface, const Image_type& image,
 	int pos_x = surface.width * fpos_x;
 	int pos_y = surface.height * fpos_y;
 
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
-
 	int width = surface.width * fwidth;
 	int height = surface.height * fheight;
 
@@ -488,9 +476,6 @@ void draw_image_async_a(Surface_type& surface, const Image_type& image,
 
 	int pos_x = surface.width * fpos_x;
 	int pos_y = surface.height * fpos_y;
-
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
 
 	int width = surface.width * fwidth;
 	int height = surface.height * fheight;
@@ -528,9 +513,6 @@ void draw_image_a(Surface_type& surface, const Image_type& image,
 	int pos_x = surface.width * fpos_x;
 	int pos_y = surface.height * fpos_y;
 
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
-
 	int width = surface.width * fwidth;
 	int height = surface.height * fheight;
 
@@ -538,7 +520,6 @@ void draw_image_a(Surface_type& surface, const Image_type& image,
 	{
 		for (int x = 0; x < width; x++)
 		{
-			assert(x < surface.width);
 			fColor color = image.get_pixel_scaled(x, y, width, height);
 			color.a = alpha;
 			drawPixel_a(surface, x + pos_x, y + pos_y, color);
@@ -556,8 +537,6 @@ void draw_image_async_a(Surface_type& surface, const Image_type& image,
 	int pos_x = surface.width * fpos_x;
 	int pos_y = surface.height * fpos_y;
 
-	fwidth = min(fwidth, 1.0f - fpos_x);
-	fheight = min(fheight, 1.0f - fpos_y);
 
 	int width = surface.width * fwidth;
 	int height = surface.height * fheight;
@@ -569,12 +548,46 @@ void draw_image_async_a(Surface_type& surface, const Image_type& image,
 				for (int y = 0; y < height; y++)
 					for (int x = from; x < to; x++)
 					{
-						assert(x < surface.width);
 						fColor color = image.get_pixel_scaled(x, y, width, height);
 						color.a = alpha;
 						drawPixel_a(surface, x + pos_x, y + pos_y, color);
 					}
 		}
 	END_FOR
+
+}
+
+
+template <typename Surface_type, typename Image_type>
+void draw_image_async_a_rotate(Surface_type& surface, const Image_type& image,
+	float fpos_x, float fpos_y, float fwidth, float fheight, float angle)
+{
+	if (fpos_x > 1.0f || fpos_y > 1.0f || fpos_x + fwidth < 0.0f || fpos_y + fheight < 0.0f || image.invalid) return;
+
+	int pos_x = surface.width * fpos_x;
+	int pos_y = surface.height * fpos_y;
+
+	int width = surface.width * fwidth;
+	int height = surface.height * fheight;
+
+	int center_x = width / 2;
+	int center_y = height / 2;
+
+
+	ASYNC_FOR(0, width)
+		[from, to, pos_y, pos_x, height, width, center_x, center_y, angle, &surface, &image]()
+	{
+		for (int y = 0; y < height; y++)
+			for (int x = from; x < to; x++)
+			{
+				int rotate_x = fastcos(angle) * (x - center_x) + fastsin(angle) * (y - center_y);
+				int rotate_y = -fastsin(angle) * (x - center_x) + fastcos(angle) * (y - center_y);
+
+				assert(x < surface.width);
+				fColor color = image.get_pixel_scaled(x, y, width, height);
+				drawPixel_a(surface, rotate_x + pos_x, rotate_y + pos_y, color);
+			}
+	}
+		END_FOR
 
 }

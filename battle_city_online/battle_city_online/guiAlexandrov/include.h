@@ -99,7 +99,7 @@ void output(const wchar_t* format, ...)
 HINSTANCE hInst;
 
 #ifndef MAX_THREADS
-#define MAX_THREADS 2
+#define MAX_THREADS 8
 #endif
 
 // unity build
@@ -107,6 +107,8 @@ HINSTANCE hInst;
 // thread pool
 #include "libs/thread_pool.cpp"
 thread_pool workers(MAX_THREADS);
+
+#include "libs/sin_cos_fast.cpp"
 
 // gui layout
 #include "image/color.cpp"
@@ -137,4 +139,5 @@ void al_init(HINSTANCE hInstance)
 {
 	hInst = hInstance;
 	init_time = high_resolution_clock::now();
+	buld_lookup_tables();
 }

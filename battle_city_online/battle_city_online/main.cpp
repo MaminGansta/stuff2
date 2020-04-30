@@ -318,10 +318,12 @@ struct player
 
 void game_loop(Battle_city_window* window)
 {
+	Image tank(L"sprites/tank_sprite2.png");
+
 	runnig = true;
 
 	// just buffer for all
-	wchar_t buffer[128];
+	wchar_t buffer[128] = L"0";
 
 	// every 2s change fps info
 	float fps_info_timeout = 2.0f;
@@ -370,11 +372,12 @@ void game_loop(Battle_city_window* window)
 
 		// Draw
 		// clr screan
-		draw_filled_rect_async(surface, 0.0f, 0.0f, 1.0f, 1.0f, Color(255));
+		draw_filled_rect_async(surface, 0.0f, 0.0f, 1.0f, 1.0f, Color(0));
 
 		// draw player
-		draw_filled_rect_async(surface, p.pos_x, p.pos_y, 0.1f, 0.1f, Color(0));
+		//draw_filled_rect_async(surface, p.pos_x, p.pos_y, 0.1f, 0.1f, Color(0));
 
+		draw_image_async_a_rotate(surface, tank, p.pos_x, p.pos_y, 0.1f, 0.1f, get_time());
 
 		// get ellapsed time
 		timer.update();
