@@ -207,7 +207,7 @@ struct Main_window : Window
 		set_font_size(lVars.handle, 25);
 		tVars.init(getHWND(), 0, 0.05f, 0.55f, 0.15f, 0.05f, RESIZABLE, tStyle);
 		
-		lLimits.init(getHWND(), L"Огранияения", 0, 0, 0.6f, 0.2f, 0.05f, RESIZABLE, lStyle);
+		lLimits.init(getHWND(), L"Ограничения", 0, 0, 0.6f, 0.2f, 0.05f, RESIZABLE, lStyle);
 		set_font_size(lLimits.handle, 25);
 		tLimits.init(getHWND(), 0, 0.05f, 0.65f, 0.15f, 0.05f, RESIZABLE, tStyle);
 		
@@ -228,7 +228,7 @@ struct Main_window : Window
 
 		target.init(getHWND(), 1, 17, 0.2f, 0.05f, 0.0445f, 0.035f, CELL_SIZE);
 
-		lBasis.init(getHWND(), L"Басис", 0, 0.2f, 0.85f, 0.1f, 0.05f);
+		lBasis.init(getHWND(), L"Базис", 0, 0.2f, 0.85f, 0.1f, 0.05f);
 		set_font_size(lBasis.handle, 25);
 
 		basis.init(getHWND(), 1, 17, 0.2f, 0.9f, 0.0445f, 0.035f, CELL_SIZE);
