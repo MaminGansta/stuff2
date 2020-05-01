@@ -13,10 +13,11 @@ void drawPixel(Image_type& surface, int x, int y, const Color_type& color)
 template <typename Image_type, typename Color_type>
 void drawPixel(Image_type& surface, int x, int y, const Color_type& color, int width)
 {
+	int left_width = width / 2;
 	int half_width = (width + 1) / 2;
 
-	for (int i = -half_width; i < half_width; i++)
-		for (int j = -half_width; j < half_width; j++)
+	for (int i = -left_width; i < half_width; i++)
+		for (int j = -left_width; j < half_width; j++)
 			drawPixel(surface, x + j, y + i, color);
 }
 

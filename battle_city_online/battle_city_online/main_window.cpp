@@ -1,4 +1,5 @@
-
+#include <filesystem>
+namespace fs = std::filesystem;
 
 struct Sprite : Image
 {
@@ -7,24 +8,27 @@ struct Sprite : Image
 
 
 // necessary for map editor
-struct Screan_image
+struct Screan_area
 {
-	Sprite* sprite;
 	float pos_x = 0.0f, pos_y = 0.0f;
+	float width = 0.0f, height = 0.0f;
 
-	Screan_image(Sprite* sprite, float x, float y) :
-		sprite(sprite),
-		pos_x(x),
-		pos_y(y)
-	{}
+	void set(float x, float y, float w, float h)
+	{
+		pos_x = x;
+		pos_y = y;
+		width = w;
+		height = h;
+	}
 
 
 	bool clicked(float x, float y)
 	{
 		return (x > pos_x && y > pos_y &&
-				y < pos_y + sprite->size &&
-				x < pos_x + sprite->size);
+				y < pos_y + height &&
+				x < pos_x + width);
 	}
+
 };
 
 
@@ -82,7 +86,9 @@ struct Battle_city_window : Window
 	Text tClientLogInfo;
 
 	// Map editor
-
+	Screan_area materials[5];
+	Screan_area Edit_exit{ 0.9f, 0.9f, 0.1f, 0.05f };
+	Screan_area Edit_save{ 0.9f, 0.95f, 0.1f, 0.05f };;
 
 	// game
 	HANDLE game_loop_thread;
@@ -141,6 +147,31 @@ struct Battle_city_window : Window
 
 				}break;
 
+
+				case WM_LBUTTONDOWN:
+				{
+					if (window->stage == Stage_Map_editor)
+					{
+						if (Mouse::pos_y > 0.9f)
+						{
+							for (int i = 0; i < 5; i++)
+								if (window->materials[i].clicked(Mouse::pos_x, Mouse::pos_y))
+									doutput("click %d\n", i);
+							
+							if (window->Edit_exit.clicked(Mouse::pos_x, Mouse::pos_y))
+								doutput(L"Exit\n");
+
+
+							if (window->Edit_save.clicked(Mouse::pos_x, Mouse::pos_y))
+								doutput(L"Save\n");
+						}
+						else
+						{
+
+						}
+					}
+				}break;
+
 				case WM_MOUSEMOVE:
 				case WM_PAINT:
 				{
@@ -160,7 +191,20 @@ struct Battle_city_window : Window
 						break;
 
 					case Stage_Map_editor:
+						draw_filled_rect_async(window->canvas, 0.0f, 0.0f, 1.0f, 1.0f, Color(0));
 
+						for (int i = 0; i < 5; i++)
+						{
+							Sprite& material = window->environment[i];
+							draw_image_a(window->canvas, material, 0.05f + 0.15 * i, 0.91f, material.size * 2.0f, material.size * 2.0f);
+						}
+
+						render_text(window->canvas, 0.9f, 0.96f, L"save", Color(255, 255, 0), get_def_font(25));
+						render_text(window->canvas, 0.9f, 0.91f, L"exit", Color(255, 255, 0), get_def_font(25));
+
+						draw_line(window->canvas, 0.0f, 0.9f, 1.0f, 0.9f, Color(255));
+						
+						window->render_canvas();
 						break;
 					}
 
@@ -338,5 +382,28 @@ struct Battle_city_window : Window
 
 void load_sprites(Battle_city_window* window)
 {
+	// load enviroment
+	int i = 0;
+	for (const auto& entry : fs::directory_iterator(L"sprites/environment"))
+	{
+		if (i > 4) break;
+		fs::path path = entry.path();
+		window->environment[i].open(path.c_str());
+		window->materials[i].set(0.05f + 0.15 * i, 0.91f, 0.08f, 0.08f);
+		i++;
+	}
+	window->environment[0].size = 0.02f;
+	window->environment[1].size = 0.04f;
+	window->environment[2].size = 0.04f;
+	window->environment[3].size = 0.02f;
+	window->environment[4].size = 0.04f;
 
+
+	window->tank[0].open(L"sprites/tank1.png");
+	window->tank[1].open(L"sprites/tank2.png");
+	window->tank[0].size = 0.07f;
+	window->tank[1].size = 0.07f;
+
+	window->bullet.open(L"sprites/bullet.png");
+	window->bullet.size = 0.02f;
 }
