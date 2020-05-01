@@ -75,7 +75,6 @@ void game_loop(Battle_city_window* window)
 		if (Input::was_pressed(VK_ESCAPE))
 		{
 			window->change_stage(Stage_Main_Menu);
-			window->redraw();
 			break;
 		}
 

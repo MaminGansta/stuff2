@@ -1,11 +1,18 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
+#define BIG_SPRITE 0.06f
+#define SMALL_SPRITE 0.02f
+
 struct Sprite : Image
 {
 	float size = 0.0f;
 };
 
+struct vec2
+{
+	float x, y;
+};
 
 // necessary for map editor
 struct Screan_area
@@ -86,6 +93,8 @@ struct Battle_city_window : Window
 	Text tClientLogInfo;
 
 	// Map editor
+	std::vector<std::pair<int, vec2>> edit_map;
+	int active_material = 0;
 	Screan_area materials[5];
 	Screan_area Edit_exit{ 0.9f, 0.9f, 0.1f, 0.05f };
 	Screan_area Edit_save{ 0.9f, 0.95f, 0.1f, 0.05f };;
@@ -148,6 +157,27 @@ struct Battle_city_window : Window
 				}break;
 
 
+
+				case WM_RBUTTONDOWN:
+				{
+					if (window->stage == Stage_Map_editor)
+					{
+						int i = 0;
+						for (auto& obj : window->edit_map)
+						{
+							float size = window->environment[obj.first].size;
+							if (Mouse::pos_x > obj.second.x && Mouse::pos_x < obj.second.x + size &&
+								Mouse::pos_y > obj.second.y && Mouse::pos_y < obj.second.y + size)
+							{
+								window->edit_map.erase(window->edit_map.begin() + i);
+								break;
+							}
+							i++;
+						}
+						goto redraw;
+					}
+				}break;
+
 				case WM_LBUTTONDOWN:
 				{
 					if (window->stage == Stage_Map_editor)
@@ -156,10 +186,10 @@ struct Battle_city_window : Window
 						{
 							for (int i = 0; i < 5; i++)
 								if (window->materials[i].clicked(Mouse::pos_x, Mouse::pos_y))
-									doutput("click %d\n", i);
-							
+									window->active_material = i;
+
 							if (window->Edit_exit.clicked(Mouse::pos_x, Mouse::pos_y))
-								doutput(L"Exit\n");
+								window->change_stage(Stage_Main_Menu);
 
 
 							if (window->Edit_save.clicked(Mouse::pos_x, Mouse::pos_y))
@@ -167,14 +197,40 @@ struct Battle_city_window : Window
 						}
 						else
 						{
+							// check if new object overlapped old
+							for (auto& obj : window->edit_map)
+							{
+								float size = window->environment[obj.first].size;
+								if (Mouse::pos_x + size * 0.6f > obj.second.x && Mouse::pos_x < obj.second.x + size &&
+									Mouse::pos_y + size * 0.6f > obj.second.y && Mouse::pos_y < obj.second.y + size)
+								{
+									goto overlapped;
+								}
+							}
 
+							// add new item 
+							float size = window->environment[window->active_material].size;
+							if (Mouse::pos_y > 0.9f - size * 0.5f) break;
+							float x_cliped = round(Mouse::pos_x / size) * size;
+							float y_cliped = round(Mouse::pos_y / size) * size;
+
+							window->edit_map.push_back(std::make_pair(window->active_material, vec2{ x_cliped, y_cliped }));
 						}
+						goto redraw;
 					}
-				}break;
+				overlapped:
+					break;
+				}
 
 				case WM_MOUSEMOVE:
+				{
+					if (window->stage == Stage_Map_editor)
+						goto redraw;
+				}break;
+
 				case WM_PAINT:
 				{
+				redraw:
 					PAINTSTRUCT ps;
 					BeginPaint(hwnd, &ps);
 
@@ -196,11 +252,22 @@ struct Battle_city_window : Window
 						for (int i = 0; i < 5; i++)
 						{
 							Sprite& material = window->environment[i];
-							draw_image_a(window->canvas, material, 0.05f + 0.15 * i, 0.91f, material.size * 2.0f, material.size * 2.0f);
+							draw_image_a(window->canvas, material, 0.05f + 0.15 * i, 0.91f, material.size, material.size);
 						}
 
 						render_text(window->canvas, 0.9f, 0.96f, L"save", Color(255, 255, 0), get_def_font(25));
 						render_text(window->canvas, 0.9f, 0.91f, L"exit", Color(255, 255, 0), get_def_font(25));
+
+						// draw current map
+						for (auto& obj : window->edit_map)
+						{
+							Sprite& material = window->environment[obj.first];
+							draw_image_async_a(window->canvas, material, obj.second.x, obj.second.y, material.size, material.size);
+						}
+
+						// draw selected material
+						Sprite& selected = window->environment[window->active_material];
+						draw_image_a(window->canvas, selected, Mouse::pos_x, Mouse::pos_y, selected.size, selected.size, 0.5f);
 
 						draw_line(window->canvas, 0.0f, 0.9f, 1.0f, 0.9f, Color(255));
 						
@@ -308,73 +375,80 @@ struct Battle_city_window : Window
 		// clean up old components
 		switch (stage)
 		{
-		case Stage_Main_Menu:
-		{
-			tNickname.hide();
-			bClose.hide();
-			bConnect.hide();
-			bHost.hide();
-			bMap_editor.hide();
-		}break;
+			case Stage_Main_Menu:
+			{
+				tNickname.hide();
+				bClose.hide();
+				bConnect.hide();
+				bHost.hide();
+				bMap_editor.hide();
+			}break;
 
-		case Stage_Host_Room:
-		{
-			lIp_port.hide();
-			tIp.hide();
-			tPort.hide();
-			bCreate_server.hide();
-			bHost_back.hide();
-			bStart.hide();
-			tHostLogInfo.hide();
-		}break;
+			case Stage_Host_Room:
+			{
+				lIp_port.hide();
+				tIp.hide();
+				tPort.hide();
+				bCreate_server.hide();
+				bHost_back.hide();
+				bStart.hide();
+				tHostLogInfo.hide();
+			}break;
 
-		case Stage_Client_Room:
-		{
-			lClient_Ip_port.hide();
-			tClient_Ip.hide();
-			tClient_Port.hide();
-			bConnect2Server.hide();
-			bClient_back.hide();
-			tClientLogInfo.hide();
-			break;
-		}
+			case Stage_Client_Room:
+			{
+				lClient_Ip_port.hide();
+				tClient_Ip.hide();
+				tClient_Port.hide();
+				bConnect2Server.hide();
+				bClient_back.hide();
+				tClientLogInfo.hide();
+				break;
+			}
+
+			case Stage_Map_editor:
+			{
+				edit_map.clear();
+			}break;
 
 		}
 
 		// set new components
 		stage = new_stage;
+		redraw();
+
 		switch (new_stage)
 		{
-		case Stage_Main_Menu:
-		{
-			tNickname.show();
-			bClose.show();
-			bConnect.show();
-			bHost.show();
-			bMap_editor.show();
-		}break;
+			case Stage_Main_Menu:
+			{
+				tNickname.show();
+				bClose.show();
+				bConnect.show();
+				bHost.show();
+				bMap_editor.show();
+			}break;
 
-		case Stage_Host_Room:
-		{
-			lIp_port.show();
-			tIp.show();
-			tPort.show();
-			bCreate_server.show();
-			bHost_back.show();
-			bStart.show();
-			tHostLogInfo.show();
-		}break;
+			case Stage_Host_Room:
+			{
+				lIp_port.show();
+				tIp.show();
+				tPort.show();
+				bCreate_server.show();
+				bHost_back.show();
+				bStart.show();
+				tHostLogInfo.show();
+			}break;
 
-		case Stage_Client_Room:
-		{
-			lClient_Ip_port.show();
-			tClient_Ip.show();
-			tClient_Port.show();
-			bConnect2Server.show();
-			bClient_back.show();
-			tClientLogInfo.show();
-			break;
-		}
+			case Stage_Client_Room:
+			{
+				lClient_Ip_port.show();
+				tClient_Ip.show();
+				tClient_Port.show();
+				bConnect2Server.show();
+				bClient_back.show();
+				tClientLogInfo.show();
+				break;
+			}
 		}
 	}
 };
@@ -389,20 +463,20 @@ void load_sprites(Battle_city_window* window)
 		if (i > 4) break;
 		fs::path path = entry.path();
 		window->environment[i].open(path.c_str());
-		window->materials[i].set(0.05f + 0.15 * i, 0.91f, 0.08f, 0.08f);
+		window->materials[i].set(0.05f + 0.15 * i, 0.91f, BIG_SPRITE, BIG_SPRITE);
 		i++;
 	}
-	window->environment[0].size = 0.02f;
-	window->environment[1].size = 0.04f;
-	window->environment[2].size = 0.04f;
-	window->environment[3].size = 0.02f;
-	window->environment[4].size = 0.04f;
+	window->environment[0].size = SMALL_SPRITE;
+	window->environment[1].size = BIG_SPRITE;
+	window->environment[2].size = BIG_SPRITE;
+	window->environment[3].size = SMALL_SPRITE;
+	window->environment[4].size = BIG_SPRITE;
 
 
 	window->tank[0].open(L"sprites/tank1.png");
 	window->tank[1].open(L"sprites/tank2.png");
-	window->tank[0].size = 0.07f;
-	window->tank[1].size = 0.07f;
+	window->tank[0].size = BIG_SPRITE;
+	window->tank[1].size = BIG_SPRITE;
 
 	window->bullet.open(L"sprites/bullet.png");
 	window->bullet.size = 0.02f;

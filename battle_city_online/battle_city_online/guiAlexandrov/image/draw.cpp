@@ -190,7 +190,6 @@ void draw_image(Surface_type& surface, const Image_type& image,
 	{
 		for (int x = 0; x < width; x++)
 		{
-			assert(x < surface.width);
 			Color color = image.get_pixel_scaled(x, y, width, height);
 			drawPixel(surface, x + pos_x, y + pos_y, color);
 		}
@@ -222,7 +221,6 @@ void draw_image_async(Surface_type& surface, const Image_type& image,
 				for (int y = 0; y < height; y++)
 					for (int x = from_x; x < to_x; x++)
 					{
-						assert(x < surface.width);
 						Color color = image.get_pixel_scaled(x, y, width, height);
 						drawPixel(surface, x + pos_x, y + pos_y, color);
 					}
@@ -469,7 +467,6 @@ void draw_image_a(Surface_type& surface, const Image_type& image,
 	{
 		for (int x = 0; x < width; x++)
 		{
-			assert(x < surface.width);
 			fColor color = image.get_pixel_scaled(x, y, width, height);
 			drawPixel_a(surface, x + pos_x, y + pos_y, color);
 		}
@@ -501,7 +498,6 @@ void draw_image_async_a(Surface_type& surface, const Image_type& image,
 				for (int y = 0; y < height; y++)
 					for (int x = from_x; x < to_x; x++)
 					{
-						assert(x < surface.width);
 						fColor color = image.get_pixel_scaled(x, y, width, height);
 						drawPixel_a(surface, x + pos_x, y + pos_y, color);
 					}
@@ -591,7 +587,6 @@ void draw_image_a_rotate(Surface_type& surface, const Image_type& image,
 			int rotate_x = fastcos(angle) * (x - center_x) + fastsin(angle) * (y - center_y);
 			int rotate_y = -fastsin(angle) * (x - center_x) + fastcos(angle) * (y - center_y);
 
-			assert(x < surface.width);
 			fColor color = image.get_pixel_scaled(x, y, width, height);
 			drawPixel_a(surface, rotate_x + pos_x, rotate_y + pos_y, color);
 		}
@@ -623,7 +618,6 @@ void draw_image_async_a_rotate(Surface_type& surface, const Image_type& image,
 				int rotate_x = fastcos(angle) * (x - center_x) + fastsin(angle) * (y - center_y);
 				int rotate_y = -fastsin(angle) * (x - center_x) + fastcos(angle) * (y - center_y);
 
-				assert(x < surface.width);
 				fColor color = image.get_pixel_scaled(x, y, width, height);
 				drawPixel_a(surface, rotate_x + pos_x, rotate_y + pos_y, color);
 			}
