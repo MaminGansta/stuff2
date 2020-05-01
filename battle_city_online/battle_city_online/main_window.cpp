@@ -488,6 +488,13 @@ struct Battle_city_window : Window
 		tank[0].size = BIG_SPRITE - 0.01f;
 		tank[1].size = BIG_SPRITE - 0.01f;
 
+		explosion[0].open(L"sprites/bang1.png");
+		explosion[1].open(L"sprites/bang2.png");
+		explosion[2].open(L"sprites/bang3.png");
+		explosion[0].size = 0.02f;
+		explosion[1].size = 0.05f;
+		explosion[2].size = 0.08f;
+
 		bullet.open(L"sprites/bullet.png");
 		bullet.size = 0.02f;
 	}

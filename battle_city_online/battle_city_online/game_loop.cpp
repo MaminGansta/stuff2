@@ -2,7 +2,7 @@
 
 struct Bullet
 {
-	float pos_x = 0, pos_y = 0;
+	float pos_x = -1.0f, pos_y = -1.0f;
 	float angle = 0;
 	float speed_x = 0;
 	float speed_y = 0;
@@ -17,9 +17,35 @@ struct Tank
 
 	Bullet bullet;
 	float angle = 0;
-	float speed = 0.3f;
+	float speed = 0.2f;
 };
 
+
+struct Explosion
+{
+	float pos_x = 0.0f, pos_y = 0.0f;
+	int sprites = 3;
+
+	float sprite_time = 0.1f;
+
+	int sprite = 0;
+	float time = sprite_time;
+
+	int get_sprite_id(float elapsed)
+	{
+		time -= elapsed;
+		if (time < 0)
+		{
+			sprite++;
+			time = sprite_time;
+		}
+		
+		if (sprite == sprites) 
+			sprite = -1;
+
+		return sprite;
+	}
+};
 
 /*
 	Game loop.
@@ -33,37 +59,35 @@ struct Tank
 void game_loop(Battle_city_window* window)
 {
 	Sprite* tank = window->tank;
+	Sprite* explosion = window->explosion;
 	Sprite& bullet = window->bullet;
 
-	// set flag that game is starts
 	runnig = true;
+	Input::keys_buffer_clear();
+
 
 	// contain fps to render it on the screan
 	wchar_t fps_buffer[32] = L"0";
-
-	// every 2s change fps info
 	float fps_info_timeout = 2.0f;
+
 
 	// context to render
 	Canvas& surface = window->canvas;
 	Sprite* envinment = window->environment;
 	auto& map = window->game_map;
 
-	// clear input data
-	Input::keys_buffer_clear();
-
 
 	// Player on this client connection
-	Tank p{ 0.9f, 0.9f };
+	Tank p{ 0.9f, 0.9f};
+	float bullet_delay = 0.5f;
+
+	small::array<Explosion, 10> explosions;
 
 
 	Timer timer;
 	while (true)
 	{
-
 		if (!runnig) break;
-
-		// ================== Proccess input =======================
 
 		// exit from the game
 		if (Input::was_pressed(VK_ESCAPE))
@@ -72,6 +96,7 @@ void game_loop(Battle_city_window* window)
 			break;
 		}
 
+		// ================ Game logic ====================
 
 		float new_x = p.pos_x, new_y = p.pos_y;
 
@@ -102,7 +127,7 @@ void game_loop(Battle_city_window* window)
 		else if (Input::pressed(VK_SPACE))
 		{
 			// if last bullet not active now
-			if (p.bullet.pos_x == -1.0f && p.bullet.pos_y == -1.0f)
+			if (p.bullet.pos_x == -1.0f && p.bullet.pos_y == -1.0f && bullet_delay < 0.0f)
 			{
 				p.bullet.angle = p.angle;
 				p.bullet.speed_x = fastcos(p.angle) * p.bullet.speed;
@@ -110,14 +135,13 @@ void game_loop(Battle_city_window* window)
 
 				p.bullet.pos_x = p.pos_x;
 				p.bullet.pos_y = p.pos_y;
+				bullet_delay = 0.5f;
 			}
 		}
-
-
-		// ================ Game logic ====================
+		bullet_delay -= timer.elapsed;
 
 		// colision detection for tank
-		bool colided = false;
+		bool collided = false;
 
 		for (auto& obj : map)
 		{
@@ -125,13 +149,13 @@ void game_loop(Battle_city_window* window)
 			float size = envinment[obj.first].size;
 			if (box_collison_detection({ new_x - tank->size * 0.5f , new_y - tank->size * 0.5f }, tank->size, { obj.second.x, obj.second.y }, size))
 			{
-				colided = true;
+				collided = true;
 				break;
 			}
 		}
 
 		// player
-		if (!colided &&
+		if (!collided &&
 			new_x - tank[0].size * 0.5f > 0.0f && new_y - tank[0].size * 0.5f > 0.0f &&
 			new_x + tank[0].size * 0.5f < 1.0f && new_y + tank[0].size * 0.5f < 1.0f)
 		{
@@ -141,9 +165,33 @@ void game_loop(Battle_city_window* window)
 		}
 
 		// proccess bullet
+		collided = false;
+		int i = -1;
+
+		for (auto& obj : map)
+		{
+			i++;
+			if (obj.first == 2) continue;
+			float size = envinment[obj.first].size;
+			if (box_collison_detection({ p.bullet.pos_x, p.bullet.pos_y }, bullet.size, { obj.second.x, obj.second.y }, size))
+			{
+				collided = true;
+
+				// add explossion effect
+				explosions.push_back(Explosion{ p.bullet.pos_x, p.bullet.pos_y , 2});
+
+				// remove destroyed element
+				if (obj.first < 2)
+					map.erase(map.begin() + i);
+
+				break;
+			}
+		}
+
 		if (p.bullet.pos_x != -1.0f)
 		{
-			if (p.bullet.pos_x > 0.0f && p.bullet.pos_y > 0.0f && p.bullet.pos_y < 1.0f && p.bullet.pos_x < 1.0f)
+			if (!collided && p.bullet.pos_x > 0.0f && p.bullet.pos_y > 0.0f &&
+							 p.bullet.pos_y < 1.0f && p.bullet.pos_x < 1.0f)
 			{
 				p.bullet.pos_x += p.bullet.speed_x * timer.elapsed;
 				p.bullet.pos_y += p.bullet.speed_y * timer.elapsed;
@@ -178,6 +226,21 @@ void game_loop(Battle_city_window* window)
 			draw_image_async_a(surface, sprite, obj.second.x, obj.second.y, sprite.size, sprite.size);
 		}
 
+		// draw explosion
+		for (int i = 0; i < explosions.size; i++)
+		{
+			int num = explosions[i].get_sprite_id(timer.elapsed);
+
+			if (num == -1)
+			{
+				explosions.remove(i--);
+				continue;
+			}
+
+			float size = explosion[num].size;
+			draw_image_async_a(surface, explosion[num], explosions[i].pos_x - size * 0.5f, 
+								explosions[i].pos_y - size * 0.5f, size , size);
+		}
 
 		// ================== Ohter stuff =====================
 
