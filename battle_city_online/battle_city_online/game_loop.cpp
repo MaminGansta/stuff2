@@ -54,7 +54,7 @@ void game_loop(Battle_city_window* window)
 
 
 	// Player on this client connection
-	Tank p{ 0.5f, 0.5f };
+	Tank p{ 0.9f, 0.9f };
 
 
 	Timer timer;
@@ -116,10 +116,26 @@ void game_loop(Battle_city_window* window)
 
 		// ================ Game logic ====================
 
+		// colision detection for tank
+		bool colided = false;
+
+		for (auto& obj : map)
+		{
+			if (obj.first == 2) continue;
+			float size = envinment[obj.first].size;
+			if (box_collison_detection({ new_x - tank->size * 0.5f , new_y - tank->size * 0.5f }, tank->size, { obj.second.x, obj.second.y }, size))
+			{
+				colided = true;
+				break;
+			}
+		}
+
 		// player
-		if (new_x - tank[0].size * 0.5f > 0.0f && new_y - tank[0].size * 0.5f > 0.0f &&
+		if (!colided &&
+			new_x - tank[0].size * 0.5f > 0.0f && new_y - tank[0].size * 0.5f > 0.0f &&
 			new_x + tank[0].size * 0.5f < 1.0f && new_y + tank[0].size * 0.5f < 1.0f)
 		{
+			
 			p.pos_x = new_x;
 			p.pos_y = new_y;
 		}
@@ -159,7 +175,7 @@ void game_loop(Battle_city_window* window)
 		for (auto& obj : map)
 		{
 			Sprite& sprite = envinment[obj.first];
-			draw_image_a(surface, sprite, obj.second.x, obj.second.y, sprite.size, sprite.size);
+			draw_image_async_a(surface, sprite, obj.second.x, obj.second.y, sprite.size, sprite.size);
 		}
 
 
@@ -179,4 +195,13 @@ void game_loop(Battle_city_window* window)
 		// Render canvas on the screan
 		window->render_canvas();
 	}
+}
+
+
+
+
+bool box_collison_detection(vec2 pos1, float size1, vec2 pos2, float size2)
+{
+	return (pos1.x + size1 > pos2.x && pos1.x < pos2.x + size2) &&
+		   (pos1.y + size1 > pos2.y && pos1.y < pos2.y + size2);
 }

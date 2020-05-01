@@ -14,6 +14,8 @@ struct vec2
 	float x, y;
 };
 
+bool box_collison_detection(vec2 pos1, float size1, vec2 pos2, float size2);
+
 // necessary for map editor
 struct Screan_area
 {
@@ -97,8 +99,8 @@ struct Battle_city_window : Window
 	std::vector<std::pair<int, vec2>> edit_map;
 	int active_material = 0;
 	Screan_area materials[5];
-	Screan_area Edit_exit{ 0.9f, 0.9f, 0.1f, 0.05f };
-	Screan_area Edit_save{ 0.9f, 0.95f, 0.1f, 0.05f };;
+	Screan_area Edit_exit{ 0.95f, 0.95f, 0.1f, 0.02f };
+	Screan_area Edit_save{ 0.95f, 0.97f, 0.1f, 0.03f };;
 
 	// game
 	HANDLE game_loop_thread;
@@ -188,7 +190,7 @@ struct Battle_city_window : Window
 				{
 					if (window->stage == Stage_Map_editor)
 					{
-						if (Mouse::pos_y > 0.9f)
+						if (Mouse::pos_y > 0.95f)
 						{
 							for (int i = 0; i < 5; i++)
 								if (window->materials[i].clicked(Mouse::pos_x, Mouse::pos_y))
@@ -203,23 +205,22 @@ struct Battle_city_window : Window
 						}
 						else
 						{
+							float size = window->environment[window->active_material].size;
+							float x_cliped = round(Mouse::pos_x / size) * size;
+							float y_cliped = round(Mouse::pos_y / size) * size;
+
 							// check if new object overlapped old
 							for (auto& obj : window->edit_map)
 							{
 								float size = window->environment[obj.first].size;
-								if (Mouse::pos_x + size * 0.6f > obj.second.x && Mouse::pos_x < obj.second.x + size &&
-									Mouse::pos_y + size * 0.6f > obj.second.y && Mouse::pos_y < obj.second.y + size)
+								if (x_cliped + size > obj.second.x && x_cliped < obj.second.x + size &&
+									y_cliped + size > obj.second.y && y_cliped < obj.second.y + size)
 								{
 									goto overlapped;
 								}
 							}
-
+							
 							// add new item 
-							float size = window->environment[window->active_material].size;
-							if (Mouse::pos_y > 0.9f - size * 0.5f) break;
-							float x_cliped = round(Mouse::pos_x / size) * size;
-							float y_cliped = round(Mouse::pos_y / size) * size;
-
 							window->edit_map.push_back(std::make_pair(window->active_material, vec2{ x_cliped, y_cliped }));
 						}
 						goto redraw;
@@ -255,15 +256,6 @@ struct Battle_city_window : Window
 					case Stage_Map_editor:
 						draw_filled_rect_async(window->canvas, 0.0f, 0.0f, 1.0f, 1.0f, Color(0));
 
-						for (int i = 0; i < 5; i++)
-						{
-							Sprite& material = window->environment[i];
-							draw_image_a(window->canvas, material, 0.05f + 0.15 * i, 0.91f, material.size, material.size);
-						}
-
-						render_text(window->canvas, 0.9f, 0.96f, L"save", Color(255, 255, 0), get_def_font(25));
-						render_text(window->canvas, 0.9f, 0.91f, L"exit", Color(255, 255, 0), get_def_font(25));
-
 						// draw current map
 						for (auto& obj : window->edit_map)
 						{
@@ -271,11 +263,21 @@ struct Battle_city_window : Window
 							draw_image_async_a(window->canvas, material, obj.second.x, obj.second.y, material.size, material.size);
 						}
 
+						// memu of materials
+						for (int i = 0; i < 5; i++)
+						{
+							Sprite& material = window->environment[i];
+							draw_image_a(window->canvas, material, 0.05f + 0.15 * i, 0.96f, material.size * 0.5f, material.size * 0.5f);
+						}
+
+						render_text(window->canvas, 0.95f, 0.975f, L"save", Color(255, 255, 0), get_def_font(20));
+						render_text(window->canvas, 0.95f, 0.955f, L"exit", Color(255, 255, 0), get_def_font(20));
+
 						// draw selected material
 						Sprite& selected = window->environment[window->active_material];
 						draw_image_a(window->canvas, selected, Mouse::pos_x, Mouse::pos_y, selected.size, selected.size, 0.5f);
 
-						draw_line(window->canvas, 0.0f, 0.9f, 1.0f, 0.9f, Color(255));
+						draw_line(window->canvas, 0.0f, 0.95f, 1.0f, 0.95f, Color(255));
 						
 						window->render_canvas();
 						break;
@@ -471,7 +473,7 @@ struct Battle_city_window : Window
 			if (i > 4) break;
 			fs::path path = entry.path();
 			environment[i].open(path.c_str());
-			materials[i].set(0.05f + 0.15 * i, 0.91f, BIG_SPRITE, BIG_SPRITE);
+			materials[i].set(0.05f + 0.15 * i, 0.96f, BIG_SPRITE, BIG_SPRITE);
 			i++;
 		}
 		environment[0].size = SMALL_SPRITE;
@@ -483,8 +485,8 @@ struct Battle_city_window : Window
 
 		tank[0].open(L"sprites/tank1.png");
 		tank[1].open(L"sprites/tank2.png");
-		tank[0].size = BIG_SPRITE;
-		tank[1].size = BIG_SPRITE;
+		tank[0].size = BIG_SPRITE - 0.01f;
+		tank[1].size = BIG_SPRITE - 0.01f;
 
 		bullet.open(L"sprites/bullet.png");
 		bullet.size = 0.02f;
@@ -528,15 +530,22 @@ struct Battle_city_window : Window
 
 	void save_map()
 	{
-		int shift = 0;
-		wchar_t data[512];
+		if (edit_map.size() == 0)
+		{
+			MessageBox(hwnd, L"map is clear", NULL, MB_OK);
+			return;
+		}
 
-		shift = swprintf_s(data, L"%d\n", edit_map.size());
+		int shift = 0;
+		int buffer_size = edit_map.size() * 25;
+		wchar_t* data = new wchar_t[buffer_size];
+
+		shift = swprintf_s(data, 10, L"%d\n", edit_map.size());
 
 		for (int i = 0; i < edit_map.size(); i++)
 		{
 			auto& elem = edit_map[i];
-			shift += swprintf_s(data + shift, 512 - shift, L"%d %f %f\n", elem.first, elem.second.x, elem.second.y);
+			shift += swprintf_s(data + shift, buffer_size - shift, L"%d %f %f\n", elem.first, elem.second.x, elem.second.y);
 		}
 
 		wchar_t filename[128];
@@ -544,6 +553,7 @@ struct Battle_city_window : Window
 		wcscat_s(filename, L".map");
 
 		write_file(filename, data, shift);
+		delete[] data;
 	}
 
 };
