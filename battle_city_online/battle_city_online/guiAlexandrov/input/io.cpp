@@ -1,5 +1,5 @@
 
-wchar_t* open_file(const wchar_t* file_name , int& len)
+wchar_t* read_file(const wchar_t* file_name , int& len)
 {
 	HANDLE hFile;
 

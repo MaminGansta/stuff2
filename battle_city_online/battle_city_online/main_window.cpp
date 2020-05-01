@@ -180,6 +180,8 @@ struct Battle_city_window : Window
 
 				case WM_LBUTTONDOWN:
 				{
+					void save_map(std::vector<std::pair<int, vec2>> & map, HWND parent);
+
 					if (window->stage == Stage_Map_editor)
 					{
 						if (Mouse::pos_y > 0.9f)
@@ -193,7 +195,7 @@ struct Battle_city_window : Window
 
 
 							if (window->Edit_save.clicked(Mouse::pos_x, Mouse::pos_y))
-								doutput(L"Save\n");
+								save_map(window->edit_map, window->hwnd);
 						}
 						else
 						{
@@ -480,4 +482,31 @@ void load_sprites(Battle_city_window* window)
 
 	window->bullet.open(L"sprites/bullet.png");
 	window->bullet.size = 0.02f;
+}
+
+
+void load_map()
+{
+
+}
+
+
+void save_map(std::vector<std::pair<int, vec2>>& map, HWND parent)
+{
+	int shift = 0;
+	wchar_t data[512];
+	
+	shift = swprintf_s(data, L"%d\n", map.size());
+
+	for (int i = 0; i < map.size(); i++)
+	{
+		auto& elem = map[i];
+		shift += swprintf_s(data + shift, 512 - shift, L"%d %f %f\n", elem.first, elem.second.x, elem.second.y);
+	}
+
+	wchar_t filename[128];
+	save_file_window(filename, 128, parent, (wchar_t*)L"*.map\0\0");
+	wcscat_s(filename, L".map");
+
+	write_file(filename, data, shift);
 }
