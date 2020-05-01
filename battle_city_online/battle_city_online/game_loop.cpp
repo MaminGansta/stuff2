@@ -24,8 +24,7 @@ struct Tank
 /*
 	Game loop.
 	Render game to the context has been set.
-	And deal with game data exchange between
-	server and client (on this proccess).
+	And deal with game data exchange with server.
 
 	Executed on another thread.
 */
@@ -33,15 +32,8 @@ struct Tank
 
 void game_loop(Battle_city_window* window)
 {
-	float tank_size = 0.07f;
-	float tank_hsize = tank_size * 0.5f;
-	float bullet_size = 0.02f;
-
-	Image bullet(L"sprites/bullet.png");
-
-	Image tank[2];
-	tank[0].open(L"sprites/tank1.png");
-	tank[1].open(L"sprites/tank2.png");
+	Sprite* tank = window->tank;
+	Sprite& bullet = window->bullet;
 
 	// set flag that game is starts
 	runnig = true;
@@ -54,6 +46,8 @@ void game_loop(Battle_city_window* window)
 
 	// context to render
 	Canvas& surface = window->canvas;
+	Sprite* envinment = window->environment;
+	auto& map = window->game_map;
 
 	// clear input data
 	Input::keys_buffer_clear();
@@ -122,10 +116,13 @@ void game_loop(Battle_city_window* window)
 
 		// ================ Game logic ====================
 
-		// proccess player
-		if (new_x - tank_hsize > 0.0f && new_y - tank_hsize > 0.0f && new_x + tank_hsize < 1.0f && new_y + tank_hsize < 1.0f)
-			p.pos_x = new_x,
+		// player
+		if (new_x - tank[0].size * 0.5f > 0.0f && new_y - tank[0].size * 0.5f > 0.0f &&
+			new_x + tank[0].size * 0.5f < 1.0f && new_y + tank[0].size * 0.5f < 1.0f)
+		{
+			p.pos_x = new_x;
 			p.pos_y = new_y;
+		}
 
 		// proccess bullet
 		if (p.bullet.pos_x != -1.0f)
@@ -153,13 +150,17 @@ void game_loop(Battle_city_window* window)
 		draw_filled_rect_async(surface, 0.0f, 0.0f, 1.0f, 1.0f, Color(0));
 
 		// draw player
-		draw_image_async_a_rotate(surface, tank[p.sprite], p.pos_x, p.pos_y, tank_size, tank_size, p.angle);
+		draw_image_async_a_rotate(surface, tank[p.sprite], p.pos_x, p.pos_y, tank[0].size, tank[0].size, p.angle);
 
 		// daraw bullet
-		draw_image_a_rotate(surface, bullet, p.bullet.pos_x, p.bullet.pos_y, bullet_size, bullet_size, p.bullet.angle);
+		draw_image_a_rotate(surface, bullet, p.bullet.pos_x, p.bullet.pos_y, bullet.size, bullet.size, p.bullet.angle);
 
-
-
+		// draw_map
+		for (auto& obj : map)
+		{
+			Sprite& sprite = envinment[obj.first];
+			draw_image_a(surface, sprite, obj.second.x, obj.second.y, sprite.size, sprite.size);
+		}
 
 
 		// ================== Ohter stuff =====================

@@ -80,6 +80,7 @@ struct Battle_city_window : Window
 	Text tIp;
 	Text tPort;
 	Button bCreate_server;
+	Button bLoad_map;
 	Button bHost_back;
 	Button bStart;
 	Text tHostLogInfo;
@@ -101,6 +102,8 @@ struct Battle_city_window : Window
 
 	// game
 	HANDLE game_loop_thread;
+	std::vector<std::pair<int, vec2>> game_map;
+
 
 	// sprites
 	Sprite environment[5];
@@ -143,6 +146,9 @@ struct Battle_city_window : Window
 					if (LOWORD(wParam) == window->bHost_back.id)
 						window->change_stage(Stage_Main_Menu);
 
+					if (LOWORD(wParam) == window->bLoad_map.id)
+						window->load_map();
+
 					if (LOWORD(wParam) == window->bStart.id)
 					{
 						window->change_stage(Stage_Game);
@@ -180,8 +186,6 @@ struct Battle_city_window : Window
 
 				case WM_LBUTTONDOWN:
 				{
-					void save_map(std::vector<std::pair<int, vec2>> & map, HWND parent);
-
 					if (window->stage == Stage_Map_editor)
 					{
 						if (Mouse::pos_y > 0.9f)
@@ -195,7 +199,7 @@ struct Battle_city_window : Window
 
 
 							if (window->Edit_save.clicked(Mouse::pos_x, Mouse::pos_y))
-								save_map(window->edit_map, window->hwnd);
+								window->save_map();
 						}
 						else
 						{
@@ -294,24 +298,22 @@ struct Battle_city_window : Window
 			});
 
 		// Load sprites
-		void load_sprites(Battle_city_window * window);
-		load_sprites(this);
-
+		load_sprites();
 
 		// set up gui elements:
 		set_min_max_size(800, 600);
 
 		// Main menu
-		bHost.init(hwnd, L"Host", 0.3f, 0.7f, 0.4f, 0.2f, RESIZABLE);
+		bHost.init(hwnd, L"Host", 0.3f, 0.7f, 0.4f, 0.2f);
 		set_font_size(bHost.hwnd, 35);
 
-		bConnect.init(hwnd, L"Connect", 0.3f, 0.45f, 0.4f, 0.2f, RESIZABLE);
+		bConnect.init(hwnd, L"Connect", 0.3f, 0.45f, 0.4f, 0.2f);
 		set_font_size(bConnect.hwnd, 35);
 
-		bClose.init(hwnd, L"Close", 0.3f, 0.2f, 0.4f, 0.2f, RESIZABLE);
+		bClose.init(hwnd, L"Close", 0.3f, 0.2f, 0.4f, 0.2f);
 		set_font_size(bClose.hwnd, 35);
 
-		bMap_editor.init(hwnd, L"Map editor", 0.05f, 0.05f, 0.2f, 0.1f, RESIZABLE);
+		bMap_editor.init(hwnd, L"Map editor", 0.05f, 0.05f, 0.2f, 0.1f);
 		set_font_size(bMap_editor.hwnd, 25);
 
 		tNickname.init(hwnd, 0.025f, 0.75f, 0.25f, 0.07f, RESIZABLE, WS_VISIBLE | WS_CHILD | WS_BORDER);
@@ -319,19 +321,22 @@ struct Battle_city_window : Window
 		tNickname.set_text(L"Nickname");
 
 		// Host room
-		lIp_port.init(hwnd, L" IP / PORT", 0.15f, 0.9f, 0.2f, 0.08f, RESIZABLE);
+		lIp_port.init(hwnd, L" IP / PORT", 0.15f, 0.9f, 0.2f, 0.08f);
 		set_font_size(lIp_port.hwnd, 32);
 
-		tIp.init(hwnd, 0.15f, 0.8f, 0.3f, 0.1f, RESIZABLE);
+		tIp.init(hwnd, 0.15f, 0.8f, 0.3f, 0.1f);
 		tIp.set_text(L"192.168.0.104");
 		set_font_size(tIp.hwnd, 32);
 
-		tPort.init(hwnd, 0.45f, 0.8f, 0.15f, 0.1f, RESIZABLE);
+		tPort.init(hwnd, 0.45f, 0.8f, 0.15f, 0.1f);
 		tPort.set_text(L"5678");
 		set_font_size(tPort.hwnd, 32);
 
-		bCreate_server.init(hwnd, L"create server", 0.6f, 0.8f, 0.25f, 0.1f, RESIZABLE);
+		bCreate_server.init(hwnd, L"create server", 0.6f, 0.8f, 0.25f, 0.1f);
 		set_font_size(bCreate_server.hwnd, 35);
+
+		bLoad_map.init(hwnd, L"Load map", 0.55f, 0.05f, 0.2f, 0.1f);
+		set_font_size(bLoad_map.hwnd, 35);
 
 		bHost_back.init(hwnd, L"Back", 0.05f, 0.05f, 0.2f, 0.1f);
 		set_font_size(bHost_back.hwnd, 35);
@@ -339,27 +344,27 @@ struct Battle_city_window : Window
 		bStart.init(hwnd, L"Start", 0.75f, 0.05f, 0.2f, 0.1f);
 		set_font_size(bStart.hwnd, 35);
 
-		tHostLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f, RESIZABLE);
+		tHostLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f);
 
 		// Client room
-		lClient_Ip_port.init(hwnd, L" IP / PORT", 0.15f, 0.9f, 0.2f, 0.08f, RESIZABLE);
+		lClient_Ip_port.init(hwnd, L" IP / PORT", 0.15f, 0.9f, 0.2f, 0.08f);
 		set_font_size(lClient_Ip_port.hwnd, 32);
 
-		tClient_Ip.init(hwnd, 0.15f, 0.8f, 0.3f, 0.1f, RESIZABLE);
+		tClient_Ip.init(hwnd, 0.15f, 0.8f, 0.3f, 0.1f);
 		tClient_Ip.set_text(L"192.168.0.104");
 		set_font_size(tClient_Ip.hwnd, 32);
 
-		tClient_Port.init(hwnd, 0.45f, 0.8f, 0.15f, 0.1f, RESIZABLE);
+		tClient_Port.init(hwnd, 0.45f, 0.8f, 0.15f, 0.1f);
 		tClient_Port.set_text(L"5678");
 		set_font_size(tClient_Port.hwnd, 32);
 
-		bConnect2Server.init(hwnd, L"Connect", 0.6f, 0.8f, 0.25f, 0.1f, RESIZABLE);
+		bConnect2Server.init(hwnd, L"Connect", 0.6f, 0.8f, 0.25f, 0.1f);
 		set_font_size(bConnect2Server.hwnd, 35);
 
 		bClient_back.init(hwnd, L"Back", 0.05f, 0.05f, 0.2f, 0.1f);
 		set_font_size(bClient_back.hwnd, 35);
 
-		tClientLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f, RESIZABLE);
+		tClientLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f);
 
 
 		// hide all components and load Main menu stage
@@ -388,6 +393,7 @@ struct Battle_city_window : Window
 
 			case Stage_Host_Room:
 			{
+				bLoad_map.hide();
 				lIp_port.hide();
 				tIp.hide();
 				tPort.hide();
@@ -432,6 +438,7 @@ struct Battle_city_window : Window
 
 			case Stage_Host_Room:
 			{
+				bLoad_map.show();
 				lIp_port.show();
 				tIp.show();
 				tPort.show();
@@ -453,60 +460,93 @@ struct Battle_city_window : Window
 			}
 		}
 	}
+
+
+	void load_sprites()
+	{
+		// load enviroment
+		int i = 0;
+		for (const auto& entry : fs::directory_iterator(L"sprites/environment"))
+		{
+			if (i > 4) break;
+			fs::path path = entry.path();
+			environment[i].open(path.c_str());
+			materials[i].set(0.05f + 0.15 * i, 0.91f, BIG_SPRITE, BIG_SPRITE);
+			i++;
+		}
+		environment[0].size = SMALL_SPRITE;
+		environment[1].size = BIG_SPRITE;
+		environment[2].size = BIG_SPRITE;
+		environment[3].size = SMALL_SPRITE;
+		environment[4].size = BIG_SPRITE;
+
+
+		tank[0].open(L"sprites/tank1.png");
+		tank[1].open(L"sprites/tank2.png");
+		tank[0].size = BIG_SPRITE;
+		tank[1].size = BIG_SPRITE;
+
+		bullet.open(L"sprites/bullet.png");
+		bullet.size = 0.02f;
+	}
+
+
+	void load_map()
+	{
+		wchar_t filename[128];
+		open_file_window(filename, 128, hwnd, (wchar_t*)L"Map File(*.map)\0*.map\0\0");
+
+		int len = 0;
+		wchar_t* data = read_file(filename, len);
+
+		if (len == 0)
+		{
+			doutput(L"map load failled\n");
+			return;
+		}
+
+		int elems = 0, shift = 0;
+		swscanf_s(data, L"%d%n", &elems, &shift);
+
+		game_map.clear();
+
+		for (int i = 0; i < elems; i++)
+		{
+			int temp = 0;
+			int material = 0;
+			float x = 0, y = 0;
+
+			swscanf_s(data + shift, L"%d %f %f%n", &material, &x, &y, &temp);
+			shift += temp;
+			game_map.push_back(std::make_pair(material, vec2{ x, y }));
+		}
+
+		delete data;
+		doutput(L"map loaded\n");
+	}
+
+
+	void save_map()
+	{
+		int shift = 0;
+		wchar_t data[512];
+
+		shift = swprintf_s(data, L"%d\n", edit_map.size());
+
+		for (int i = 0; i < edit_map.size(); i++)
+		{
+			auto& elem = edit_map[i];
+			shift += swprintf_s(data + shift, 512 - shift, L"%d %f %f\n", elem.first, elem.second.x, elem.second.y);
+		}
+
+		wchar_t filename[128];
+		save_file_window(filename, 128, hwnd, (wchar_t*)L"(*.map)\0*.map\0\0");
+		wcscat_s(filename, L".map");
+
+		write_file(filename, data, shift);
+	}
+
 };
 
 
-void load_sprites(Battle_city_window* window)
-{
-	// load enviroment
-	int i = 0;
-	for (const auto& entry : fs::directory_iterator(L"sprites/environment"))
-	{
-		if (i > 4) break;
-		fs::path path = entry.path();
-		window->environment[i].open(path.c_str());
-		window->materials[i].set(0.05f + 0.15 * i, 0.91f, BIG_SPRITE, BIG_SPRITE);
-		i++;
-	}
-	window->environment[0].size = SMALL_SPRITE;
-	window->environment[1].size = BIG_SPRITE;
-	window->environment[2].size = BIG_SPRITE;
-	window->environment[3].size = SMALL_SPRITE;
-	window->environment[4].size = BIG_SPRITE;
 
-
-	window->tank[0].open(L"sprites/tank1.png");
-	window->tank[1].open(L"sprites/tank2.png");
-	window->tank[0].size = BIG_SPRITE;
-	window->tank[1].size = BIG_SPRITE;
-
-	window->bullet.open(L"sprites/bullet.png");
-	window->bullet.size = 0.02f;
-}
-
-
-void load_map()
-{
-
-}
-
-
-void save_map(std::vector<std::pair<int, vec2>>& map, HWND parent)
-{
-	int shift = 0;
-	wchar_t data[512];
-	
-	shift = swprintf_s(data, L"%d\n", map.size());
-
-	for (int i = 0; i < map.size(); i++)
-	{
-		auto& elem = map[i];
-		shift += swprintf_s(data + shift, 512 - shift, L"%d %f %f\n", elem.first, elem.second.x, elem.second.y);
-	}
-
-	wchar_t filename[128];
-	save_file_window(filename, 128, parent, (wchar_t*)L"*.map\0\0");
-	wcscat_s(filename, L".map");
-
-	write_file(filename, data, shift);
-}
