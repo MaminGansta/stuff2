@@ -6,7 +6,7 @@ struct Bullet
 	float angle = 0;
 	float speed_x = 0;
 	float speed_y = 0;
-	float speed = 0.5f;
+	float speed = 0.6f;
 };
 
 
@@ -43,11 +43,11 @@ void game_loop(Battle_city_window* window)
 	tank[0].open(L"sprites/tank1.png");
 	tank[1].open(L"sprites/tank2.png");
 
-
+	// set flag that game is starts
 	runnig = true;
 
-	// just buffer for all
-	wchar_t buffer[128] = L"0";
+	// contain fps to render it on the screan
+	wchar_t fps_buffer[32] = L"0";
 
 	// every 2s change fps info
 	float fps_info_timeout = 2.0f;
@@ -64,13 +64,13 @@ void game_loop(Battle_city_window* window)
 
 
 	Timer timer;
-
 	while (true)
 	{
 
 		if (!runnig) break;
 
-		// Handle input
+		// ================== Proccess input =======================
+
 		// exit from the game
 		if (Input::was_pressed(VK_ESCAPE))
 		{
@@ -108,6 +108,7 @@ void game_loop(Battle_city_window* window)
 		}
 		else if (Input::pressed(VK_SPACE))
 		{
+			// if last bullet not active now
 			if (p.bullet.pos_x == -1.0f && p.bullet.pos_y == -1.0f)
 			{
 				p.bullet.angle = p.angle;
@@ -120,7 +121,7 @@ void game_loop(Battle_city_window* window)
 		}
 
 
-		// Game logic
+		// ================ Game logic ====================
 
 		// proccess player
 		if (new_x - tank_hsize > 0.0f && new_y - tank_hsize > 0.0f && new_x + tank_hsize < 1.0f && new_y + tank_hsize < 1.0f)
@@ -144,11 +145,11 @@ void game_loop(Battle_city_window* window)
 		}
 
 
-		// data exchange between server
+		// data exchange with server
 
 
 
-		// Draw
+		// =================== Draw ====================
 		// clr screan
 		draw_filled_rect_async(surface, 0.0f, 0.0f, 1.0f, 1.0f, Color(0));
 
@@ -158,19 +159,24 @@ void game_loop(Battle_city_window* window)
 		// daraw bullet
 		draw_image_a_rotate(surface, bullet, p.bullet.pos_x, p.bullet.pos_y, bullet_size, bullet_size, p.bullet.angle);
 
+
+
+
+
+		// ================== Ohter stuff =====================
+
 		// get ellapsed time
 		timer.update();
 
-		// set window title
+		// Render FPS on right top of window
 		if ((fps_info_timeout -= timer.elapsed) < 0.0f)
 		{
-			swprintf_s(buffer, L"%d", timer.FPS);
+			swprintf_s(fps_buffer, L"%d", timer.FPS);
 			fps_info_timeout = 2.0f;
 		}
-		render_text(surface, 0.9f, 0.94f, buffer, Color(240, 150, 0), get_def_font(25));
+		render_text(surface, 0.9f, 0.94f, fps_buffer, Color(240, 150, 0), get_def_font(25));
 
-
-		// Render canvas to the window
+		// Render canvas on the screan
 		window->render_canvas();
 	}
 }
