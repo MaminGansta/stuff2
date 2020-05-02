@@ -213,8 +213,8 @@ struct Battle_city_window : Window
 							for (auto& obj : window->edit_map)
 							{
 								float size = window->environment[obj.first].size;
-								if (x_cliped + size > obj.second.x && x_cliped < obj.second.x + size &&
-									y_cliped + size > obj.second.y && y_cliped < obj.second.y + size)
+								if (x_cliped + size * 0.5f > obj.second.x && x_cliped < obj.second.x + size * 0.5f &&
+									y_cliped + size * 0.5f > obj.second.y && y_cliped < obj.second.y + size * 0.5f)
 								{
 									goto overlapped;
 								}
@@ -274,8 +274,14 @@ struct Battle_city_window : Window
 						render_text(window->canvas, 0.95f, 0.955f, L"exit", Color(255, 255, 0), get_def_font(20));
 
 						// draw selected material
-						Sprite& selected = window->environment[window->active_material];
-						draw_image_a(window->canvas, selected, Mouse::pos_x, Mouse::pos_y, selected.size, selected.size, 0.5f);
+						{
+							Sprite& selected = window->environment[window->active_material];
+							float size = selected.size;
+							float x_cliped = round(Mouse::pos_x / size) * size;
+							float y_cliped = round(Mouse::pos_y / size) * size;
+
+							draw_image_a(window->canvas, selected, x_cliped, y_cliped, selected.size, selected.size, 0.5f);
+						}
 
 						draw_line(window->canvas, 0.0f, 0.95f, 1.0f, 0.95f, Color(255));
 						
