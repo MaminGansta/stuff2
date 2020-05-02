@@ -23,17 +23,33 @@ enum Packet
 	P_End,
 
 	P_Player,
-	P_Bullet
+	P_Destroy
 };
 
 
-struct Player
+struct Bullet
 {
-	float pos_x, pos_y, angle;
+	float pos_x = -1.0f, pos_y = -1.0f;
+	float angle = 0;
+	float speed_x = 0;
+	float speed_y = 0;
+	float speed = 0.6f;
+};
+struct Tank
+{
+	float pos_x = 0, pos_y = 0;
+	int sprite = 0;
+
+	Bullet bullet;
+	float angle = 0;
+	float speed = 0.2f;
 };
 
 int nPlayers = 0;
-Player players[4];
+Tank players[4];
+
+int nDestroy = 0;
+int destroy[4];
 
 
 bool client_runnig = true;
@@ -219,8 +235,20 @@ bool ProccesPacket(Packet packettype, Client& client)
 
 		nPlayers = size;
 		for (int i = 0; i < size; i++)
-			recv(client.Connection, (char*)&players[i], sizeof(Player), NULL);
+			recv(client.Connection, (char*)&players[i], sizeof(Tank), NULL);
 
+	}break;
+
+	case P_Destroy:
+	{
+		recv(client.Connection, (char*)&nDestroy, sizeof(int), NULL);
+		
+		int id = 0;
+		for (int i = 0; i < nDestroy; i++)
+		{
+			recv(client.Connection, (char*)&id, sizeof(int), NULL);
+			destroy[i] = id;
+		}
 	}break;
 
 	default:

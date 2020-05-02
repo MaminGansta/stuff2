@@ -1,25 +1,5 @@
 
 
-struct Bullet
-{
-	float pos_x = -1.0f, pos_y = -1.0f;
-	float angle = 0;
-	float speed_x = 0;
-	float speed_y = 0;
-	float speed = 0.6f;
-};
-
-
-struct Tank
-{
-	float pos_x = 0, pos_y = 0;
-	int sprite = 0;
-
-	Bullet bullet;
-	float angle = 0;
-	float speed = 0.2f;
-};
-
 
 struct Explosion
 {
@@ -155,6 +135,7 @@ void game_loop(Battle_city_window* window)
 			}
 		}
 
+
 		// player
 		if (!collided &&
 			new_x - tank[0].size * 0.5f > 0.0f && new_y - tank[0].size * 0.5f > 0.0f &&
@@ -178,13 +159,13 @@ void game_loop(Battle_city_window* window)
 			{
 				collided = true;
 
-				// add explossion effect
-				explosions.push_back(Explosion{ p.bullet.pos_x, p.bullet.pos_y , 2});
-
-				// remove destroyed element
 				if (obj.first < 2)
-					map.erase(map.begin() + i);
-
+				{
+					Packet packet = P_Destroy;
+					send(window->client.Connection, (char*)&packet, sizeof(Packet), NULL);
+					send(window->client.Connection, (char*)&i, sizeof(int), NULL);
+				}
+				
 				break;
 			}
 		}
@@ -207,16 +188,31 @@ void game_loop(Battle_city_window* window)
 
 
 		// data exchange with server
-
+		
 		// send data
 		Packet packet = P_Player;
 		send(window->client.Connection, (char*)&packet, sizeof(Packet), NULL);
 
-		Player pl{ p.pos_x, p.pos_y, p.angle };
-		send(window->client.Connection, (char*)&pl, sizeof(Player), NULL);
+		send(window->client.Connection, (char*)&p, sizeof(Tank), NULL);
 
 
-		// get data
+		// proccess data from the server
+		
+		if (nDestroy != 0)
+			printf("fd");
+
+		for (int i = 0; i < nDestroy; i++)
+		{
+			// add explossion effect
+			explosions.push_back(Explosion{ map[destroy[i]].second.x + BIG_SPRITE * 0.5f, 
+											map[destroy[i]].second.y + BIG_SPRITE * 0.5f , 2 });
+			
+			// remove destroyed element
+			map.erase(map.begin() + destroy[i]);
+		}
+		nDestroy = 0;
+
+	
 
 
 		// =================== Draw ====================
@@ -239,9 +235,20 @@ void game_loop(Battle_city_window* window)
 		// draw enemies
 		for (int i = 0; i < nPlayers; i++)
 		{
-			draw_image_async_a_rotate(surface, tank[p.sprite], players[i].pos_x, players[i].pos_y,
+			draw_image_async_a_rotate(surface, tank[players[i].sprite], players[i].pos_x, players[i].pos_y,
 										tank[0].size, tank[0].size, players[i].angle);
 		}
+
+		// draw bullets
+		for (int i = 0; i < nPlayers; i++)
+		{
+			draw_image_a_rotate(surface, bullet, players[i].bullet.pos_x, players[i].bullet.pos_y, 
+				bullet.size, bullet.size, players[i].bullet.angle);
+		}
+
+
+
+
 
 		// draw explosion
 		for (int i = 0; i < explosions.size; i++)

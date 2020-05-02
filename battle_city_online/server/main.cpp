@@ -31,16 +31,33 @@ enum Packet
 	P_End,
 
 	P_Player,
-	P_Bullet
+	P_Destroy
 };
 
 // game data
 
-struct Player
+struct Bullet
 {
-	float pos_x, pos_y, angle;
+	float pos_x = -1.0f, pos_y = -1.0f;
+	float angle = 0;
+	float speed_x = 0;
+	float speed_y = 0;
+	float speed = 0.6f;
 };
-Player players[4];
+struct Tank
+{
+	float pos_x = 0, pos_y = 0;
+	int sprite = 0;
+
+	Bullet bullet;
+	float angle = 0;
+	float speed = 0.2f;
+};
+
+Tank players[4];
+
+int nDestroy = 0;
+int destroy[4];
 
 bool game = true;
 HANDLE hGame_thread;
@@ -65,19 +82,33 @@ void send_game_data()
 		Packet packet = P_Player;
 		for (int i = 0; i < nConnections; i++)
 		{
-			printf("connections %d\n", nConnections);
 
 			send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
 
 			int players_amount = nConnections - 1;
 			send(Connections[i], (char*)&players_amount, sizeof(int), NULL);
 
-			int crutch = 0;
 			for (int j = 0; j < nConnections; j++)
 			{
 				if (i != j)
-					send(Connections[i], (char*)&players[j], sizeof(Player), NULL);
+					send(Connections[i], (char*)&players[j], sizeof(Tank), NULL);
 			}
+		}
+
+		packet = P_Destroy;
+		if (nDestroy)
+		{
+			for (int i = 0; i < nConnections; i++)
+			{
+				printf("%d\n", nDestroy);
+
+				send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
+				send(Connections[i], (char*)&nDestroy, sizeof(int), NULL);
+
+				for (int j = 0; j < nDestroy; j++)
+					send(Connections[i], (char*)&destroy[j], sizeof(int), NULL);
+			}
+			nDestroy = 0;
 		}
 	}
 }
@@ -104,7 +135,7 @@ BOOL WINAPI console_callback(DWORD fdwCtrlType)
 
 bool ProccesPacket(int index, Packet packettype)
 {
-	printf("packettype: %d\n", packettype);
+	//printf("packettype: %d\n", packettype);
 
 	switch (packettype)
 	{
@@ -177,7 +208,14 @@ bool ProccesPacket(int index, Packet packettype)
 
 	case P_Player:
 	{
-		recv(Connections[index], (char*)&players[index], sizeof(Player), NULL);
+		recv(Connections[index], (char*)&players[index], sizeof(Tank), NULL);
+	}break;
+
+	case P_Destroy:
+	{
+		int id;
+		recv(Connections[index], (char*)&id, sizeof(int), NULL);
+		destroy[nDestroy++] = id;
 	}break;
 
 	default:
