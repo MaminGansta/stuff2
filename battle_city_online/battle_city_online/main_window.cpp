@@ -99,8 +99,9 @@ struct Battle_city_window : Window
 	std::vector<std::pair<int, vec2>> edit_map;
 	int active_material = 0;
 	Screan_area materials[5];
-	Screan_area Edit_exit{ 0.95f, 0.95f, 0.1f, 0.02f };
-	Screan_area Edit_save{ 0.95f, 0.97f, 0.1f, 0.03f };;
+	Screan_area Edit_exit{ 0.95f, 0.97f, 0.05f, 0.02f };
+	Screan_area Edit_save{ 0.9f, 0.97f, 0.05f, 0.03f };;
+	Screan_area Edit_open{ 0.85f, 0.97f, 0.05f, 0.03f };;
 
 	// game
 	HANDLE game_loop_thread;
@@ -199,9 +200,11 @@ struct Battle_city_window : Window
 							if (window->Edit_exit.clicked(Mouse::pos_x, Mouse::pos_y))
 								window->change_stage(Stage_Main_Menu);
 
-
 							if (window->Edit_save.clicked(Mouse::pos_x, Mouse::pos_y))
 								window->save_map();
+
+							if (window->Edit_open.clicked(Mouse::pos_x, Mouse::pos_y))
+								window->load_map();
 						}
 						else
 						{
@@ -270,8 +273,9 @@ struct Battle_city_window : Window
 							draw_image_a(window->canvas, material, 0.05f + 0.15 * i, 0.96f, material.size * 0.5f, material.size * 0.5f);
 						}
 
-						render_text(window->canvas, 0.95f, 0.975f, L"save", Color(255, 255, 0), get_def_font(20));
-						render_text(window->canvas, 0.95f, 0.955f, L"exit", Color(255, 255, 0), get_def_font(20));
+						render_text(window->canvas, 0.85f, 0.975f, L"open", Color(255, 255, 0), get_def_font(20));
+						render_text(window->canvas, 0.901f, 0.975f, L"save", Color(255, 255, 0), get_def_font(20));
+						render_text(window->canvas, 0.95f, 0.975f, L"exit", Color(255, 255, 0), get_def_font(20));
 
 						// draw selected material
 						{
@@ -523,7 +527,7 @@ struct Battle_city_window : Window
 		int elems = 0, shift = 0;
 		swscanf_s(data, L"%d%n", &elems, &shift);
 
-		game_map.clear();
+		std::vector<std::pair<int, vec2>> map;
 
 		for (int i = 0; i < elems; i++)
 		{
@@ -533,8 +537,20 @@ struct Battle_city_window : Window
 
 			swscanf_s(data + shift, L"%d %f %f%n", &material, &x, &y, &temp);
 			shift += temp;
-			game_map.push_back(std::make_pair(material, vec2{ x, y }));
+			map.push_back(std::make_pair(material, vec2{ x, y }));
 		}
+
+		switch (stage)
+		{
+			case Stage_Host_Room:
+				game_map = std::move(map);
+				break;
+
+			case Stage_Map_editor:
+				edit_map = std::move(map);
+				break;
+		}
+
 
 		delete data;
 		doutput(L"map loaded\n");
