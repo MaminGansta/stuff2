@@ -47,6 +47,7 @@ struct Explosion
 	}
 };
 
+
 /*
 	Game loop.
 	Render game to the context has been set.
@@ -207,6 +208,15 @@ void game_loop(Battle_city_window* window)
 
 		// data exchange with server
 
+		// send data
+		Packet packet = P_Player;
+		send(window->client.Connection, (char*)&packet, sizeof(Packet), NULL);
+
+		Player pl{ p.pos_x, p.pos_y, p.angle };
+		send(window->client.Connection, (char*)&pl, sizeof(Player), NULL);
+
+
+		// get data
 
 
 		// =================== Draw ====================
@@ -224,6 +234,13 @@ void game_loop(Battle_city_window* window)
 		{
 			Sprite& sprite = envinment[obj.first];
 			draw_image_async_a(surface, sprite, obj.second.x, obj.second.y, sprite.size, sprite.size);
+		}
+
+		// draw enemies
+		for (int i = 0; i < nPlayers; i++)
+		{
+			draw_image_async_a_rotate(surface, tank[p.sprite], players[i].pos_x, players[i].pos_y,
+										tank[0].size, tank[0].size, players[i].angle);
 		}
 
 		// draw explosion

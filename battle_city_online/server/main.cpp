@@ -27,8 +27,23 @@ enum Packet
 
 	// game
 	P_Map,
-	P_Start
+	P_Start,
+	P_End,
+
+	P_Player,
+	P_Bullet
 };
+
+// game data
+
+struct Player
+{
+	float pos_x, pos_y, angle;
+};
+Player players[4];
+
+bool game = true;
+HANDLE hGame_thread;
 
 bool wm_close = false;
 HANDLE threads[MAX_CLIENTS];
@@ -40,6 +55,34 @@ std::shared_mutex mutex;
 #include "messages.cpp"
 
 
+
+void send_game_data()
+{
+	while (game)
+	{
+		Sleep(10);
+
+		Packet packet = P_Player;
+		for (int i = 0; i < nConnections; i++)
+		{
+			printf("connections %d\n", nConnections);
+
+			send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
+
+			int players_amount = nConnections - 1;
+			send(Connections[i], (char*)&players_amount, sizeof(int), NULL);
+
+			int crutch = 0;
+			for (int j = 0; j < nConnections; j++)
+			{
+				if (i != j)
+					send(Connections[i], (char*)&players[j], sizeof(Player), NULL);
+			}
+		}
+	}
+}
+
+
 // console callback
 BOOL WINAPI console_callback(DWORD fdwCtrlType)
 {
@@ -49,6 +92,7 @@ BOOL WINAPI console_callback(DWORD fdwCtrlType)
 	case CTRL_CLOSE_EVENT:
 		sendCloseForAll();
 		wm_close = true;
+		game = false;
 		return TRUE;
 
 	default:
@@ -126,7 +170,14 @@ bool ProccesPacket(int index, Packet packettype)
 
 	case P_Start:
 	{
+		game = true;
 		sendStart(index);
+		hGame_thread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)send_game_data, NULL, NULL, NULL);
+	}break;
+
+	case P_Player:
+	{
+		recv(Connections[index], (char*)&players[index], sizeof(Player), NULL);
 	}break;
 
 	default:

@@ -19,8 +19,22 @@ enum Packet
 
 	// game
 	P_Map,
-	P_Start
+	P_Start,
+	P_End,
+
+	P_Player,
+	P_Bullet
 };
+
+
+struct Player
+{
+	float pos_x, pos_y, angle;
+};
+
+int nPlayers = 0;
+Player players[4];
+
 
 bool client_runnig = true;
 
@@ -143,6 +157,11 @@ struct Client
 
 		Sleep(5000);
 	}
+
+	void send_player()
+	{
+
+	}
 };
 
 
@@ -161,9 +180,9 @@ bool ProccesPacket(Packet packettype, Client& client)
 
 	case P_ChatMessage:
 	{
-		char msg[128];
-		recv(client.Connection, msg, sizeof(msg), NULL);
-		doutput("%s\n", msg);
+		//char msg[128];
+		//recv(client.Connection, msg, sizeof(msg), NULL);
+		//doutput("%s\n", msg);
 	}break;
 
 	case P_Exit:
@@ -191,6 +210,17 @@ bool ProccesPacket(Packet packettype, Client& client)
 	case P_Start:
 	{
 		SendMessage(client.main_window, WM_START, 0, 0);
+	}break;
+
+	case P_Player:
+	{
+		int size = 0;
+		recv(client.Connection, (char*)&size, sizeof(int), NULL);
+
+		nPlayers = size;
+		for (int i = 0; i < size; i++)
+			recv(client.Connection, (char*)&players[i], sizeof(Player), NULL);
+
 	}break;
 
 	default:
