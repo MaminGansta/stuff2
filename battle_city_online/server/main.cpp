@@ -10,26 +10,27 @@
 #include <shared_mutex>
 #include <string>
 
-#define DEFAULT_PORT	5678
+#define MAX_CLIENTS 4
 
 enum Packet
 {
+	P_Server_exit,
+
 	// connection
 	P_InitConnection,
-	P_ServerFull,
 	P_Exit,
+	P_ServerFull,
 	P_Test,
 
 	// chat 
 	P_ChatMessage
 
-
 	// game
 };
 
 bool wm_close = false;
-HANDLE threads[10];
-SOCKET Connections[10];
+HANDLE threads[MAX_CLIENTS];
+SOCKET Connections [MAX_CLIENTS];
 std::atomic_int nConnections = 0;
 std::shared_mutex mutex;
 
@@ -44,13 +45,7 @@ BOOL WINAPI console_callback(DWORD fdwCtrlType)
 	{
 		// if console was closed
 	case CTRL_CLOSE_EVENT:
-		for (int i = 0; i < nConnections; i++)
-		{
-			// notify clients for the end of connection
-			Packet packet_exit = P_Exit;
-			send(Connections[i], (char*)&packet_exit, sizeof(Packet), NULL);
-		}
-
+		sendCloseForAll();
 		wm_close = true;
 		return TRUE;
 
@@ -67,6 +62,17 @@ bool ProccesPacket(int index, Packet packettype)
 
 	switch (packettype)
 	{
+	
+	case P_InitConnection:
+	{
+
+	}break;
+
+	case P_Test:
+	{
+		sendTest(index);
+	}
+
 	case P_ChatMessage:
 	{
 		char msg[128];
@@ -98,6 +104,12 @@ bool ProccesPacket(int index, Packet packettype)
 		printf("client disconnect\n");
 	}return false;
 
+	case P_Server_exit:
+	{
+		printf("Server shudown\n");
+		sendCloseForAll();
+	}return false;
+
 	default:
 		printf("unknow packet\n");
 		closesocket(Connections[index]);
@@ -120,7 +132,7 @@ void ClientHandler(int index)
 }
 
 
-int main(void)
+int main(int argc, const char* argv[])
 {
 	// set controll callback funtion for this console window
 	if (!SetConsoleCtrlHandler(console_callback, TRUE))
@@ -139,43 +151,47 @@ int main(void)
 	}
 
 
-	SOCKADDR_IN server;
+	SOCKADDR_IN server; 
 	hostent* host = NULL;
 
 	server.sin_family = AF_INET;
-	server.sin_port = htons(DEFAULT_PORT);
-	server.sin_addr.s_addr = inet_addr("192.168.0.104");
-
+	server.sin_addr.s_addr = inet_addr(argv[0]);
+	server.sin_port = htons(atoi(argv[1]));
+	//server.sin_addr.s_addr = inet_addr("192.168.0.104");
+	//server.sin_port = 5678;
 
 	SOCKET sListener = socket(AF_INET, SOCK_STREAM, NULL);
 	bind(sListener, (SOCKADDR*)&server, sizeof(server));
 	listen(sListener, SOMAXCONN);
 
+	printf("Server start up\n");
+	printf("%s %s\n\n", argv[0], argv[1]);
 
 	while (true)
 	{
 		int server_size = sizeof(server);
 		SOCKET connection = accept(sListener, (SOCKADDR*)&server, &server_size);
 
-		if (nConnections > 5)
+		// if window was closed by x
+		if (wm_close) break;
+
+
+		if (nConnections > MAX_CLIENTS)
 		{
-			Packet packet_exit = P_ServerFull;
-			send(connection, (char*)&packet_exit, sizeof(Packet), NULL);
+			sendServerFull(connection);
 			shutdown(connection, CF_BOTH);
+			continue;
+		}
+
+		if (connection == 0)
+		{
+			printf("connection Error\n");
 			continue;
 		}
 
 		std::unique_lock<std::shared_mutex> lock(mutex);
 		Connections[nConnections] = connection;
 
-		// if window was closed by x
-		if (wm_close) break;
-
-		if (Connections[nConnections] == 0)
-		{
-			printf("connection Error\n");
-			continue;
-		}
 
 		printf("New client connected. Socket %d\n", connection);
 		sendInit(nConnections);

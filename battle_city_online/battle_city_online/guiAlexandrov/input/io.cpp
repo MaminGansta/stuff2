@@ -1,5 +1,10 @@
 
-wchar_t* read_file(const wchar_t* file_name , int& len)
+/*
+	Return heap allocated buffer with file data
+*/
+
+template <typename T>
+T* read_file(T* file_name , int& len)
 {
 	HANDLE hFile;
 
@@ -13,18 +18,17 @@ wchar_t* read_file(const wchar_t* file_name , int& len)
 
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		_tprintf(TEXT("hFile is NULL\n"));
-		_tprintf(TEXT("Target file is %s\n"),
-			file_name);
+		doutput(L"hFile is NULL\n");
+		doutput(L"Target file is %s\n", file_name);
 		return  NULL;
 	}
 
 	len = GetFileSize(hFile, NULL);
 	DWORD nBytesRead;
 	BOOL bResult;
-	wchar_t* data = new wchar_t[len];
+	T* data = new T[len];
 
-	bResult = ReadFile(hFile, data, len * sizeof(wchar_t), &nBytesRead, NULL);
+	bResult = ReadFile(hFile, data, len * sizeof(T), &nBytesRead, NULL);
 
 	if (!bResult)
 	{
@@ -33,12 +37,16 @@ wchar_t* read_file(const wchar_t* file_name , int& len)
 	}
 
 	CloseHandle(hFile);
-
 	return data;
 }
 
 
-void write_file(const wchar_t* file_name, wchar_t* data, int len)
+/*
+	return amount of chars that was written
+*/
+
+template <typename T>
+int write_file(T* file_name, T* data, int len)
 {
 	HANDLE hFile;
 
@@ -52,21 +60,21 @@ void write_file(const wchar_t* file_name, wchar_t* data, int len)
 
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		_tprintf(TEXT("hFile is NULL\n"));
-		_tprintf(TEXT("Target file is %s\n"),
-			file_name);
-		return;
+		doutput(L"hFile is NULL\n");
+		doutput(L"Target file is %s\n", file_name);
+		return 0;
 	}
 
 	DWORD nBytesWrited;
 	BOOL bResult;
-	bResult = WriteFile(hFile, data, len * sizeof(wchar_t), &nBytesWrited, NULL);
+	bResult = WriteFile(hFile, data, len * sizeof(T), &nBytesWrited, NULL);
 
 	if (!bResult)
 	{
 		doutput("Write failed\n");
-		return;
+		return 0;
 	}
 
 	CloseHandle(hFile);
+	return nBytesWrited / sizeof(T);
 }

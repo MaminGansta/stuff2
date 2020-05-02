@@ -16,6 +16,7 @@ struct vec2
 
 bool box_collison_detection(vec2 pos1, float size1, vec2 pos2, float size2);
 
+
 // necessary for map editor
 struct Screan_area
 {
@@ -103,16 +104,20 @@ struct Battle_city_window : Window
 	Screan_area Edit_save{ 0.9f, 0.97f, 0.05f, 0.03f };;
 	Screan_area Edit_open{ 0.85f, 0.97f, 0.05f, 0.03f };;
 
-	// game
+	// Game
 	HANDLE game_loop_thread;
 	std::vector<std::pair<int, vec2>> game_map;
 
-
-	// sprites
+	// Gaame: sprites
 	Sprite environment[5];
 	Sprite tank[2];
 	Sprite bullet;
 	Sprite explosion[3];
+
+	// Client Server
+	Client client;
+	Server server;
+
 
 	Battle_city_window()
 	{
@@ -152,6 +157,22 @@ struct Battle_city_window : Window
 					if (LOWORD(wParam) == window->bLoad_map.id)
 						window->load_map();
 
+					if (LOWORD(wParam) == window->bCreate_server.id)
+					{
+						wchar_t args[128] = L"\0";
+						//wcscat_s(args, 128, L"\"battle_city_server.exe \"");
+						wcscat_s(args, 128, window->tIp.get_text());
+						wcscat_s(args, 128, L" ");
+						wcscat_s(args, 128, window->tPort.get_text());
+
+						// create server if not
+						if (window->server.create(args))
+						{
+							// Connect Host to the server
+							window->client.Connect(window->tIp.get_text(), wtoi(window->tPort.get_text()));
+						}
+					}
+
 					if (LOWORD(wParam) == window->bStart.id)
 					{
 						window->change_stage(Stage_Game);
@@ -160,6 +181,10 @@ struct Battle_city_window : Window
 					}
 
 					// Client room
+					if (LOWORD(wParam) == window->bConnect2Server.id)
+						window->client.Connect(window->tClient_Ip.get_text(), 
+										  wtoi(window->tClient_Port.get_text()));
+
 					if (LOWORD(wParam) == window->bClient_back.id)
 						window->change_stage(Stage_Main_Menu);
 
@@ -298,6 +323,9 @@ struct Battle_city_window : Window
 
 				case WM_CLOSE:
 				{
+					if (window->server.runnig())
+						window->client.send_server_close();
+						
 					runnig = false;
 					WaitForSingleObject(window->game_loop_thread, INFINITE);
 				}break;
@@ -550,7 +578,6 @@ struct Battle_city_window : Window
 				edit_map = std::move(map);
 				break;
 		}
-
 
 		delete data;
 		doutput(L"map loaded\n");

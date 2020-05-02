@@ -1,9 +1,13 @@
+#pragma comment(lib, "ws2_32.lib")
+#include <winsock2.h>
 
 #define FULL_SCREAN_CANVAS
 #include "guiAlexandrov/include.h"
 
 bool runnig = false;
 
+#include "client.cpp"
+#include "server.cpp"
 #include "main_window.cpp"
 #include "game_loop.cpp"
 
