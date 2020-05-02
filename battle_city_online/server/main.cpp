@@ -23,15 +23,16 @@ enum Packet
 	P_Test,
 
 	// chat 
-	P_ChatMessage
+	P_ChatMessage,
 
 	// game
+	P_Map
 };
 
 bool wm_close = false;
 HANDLE threads[MAX_CLIENTS];
 SOCKET Connections [MAX_CLIENTS];
-std::atomic_int nConnections = 0;
+int nConnections = 0;
 std::shared_mutex mutex;
 
 
@@ -109,6 +110,27 @@ bool ProccesPacket(int index, Packet packettype)
 		printf("Server shudown\n");
 		sendCloseForAll();
 	}return false;
+
+	case P_Map:
+	{
+		int size = 0;
+		recv(Connections[index], (char*)&size, sizeof(int), NULL);
+
+		printf("load size %d\n", size);
+
+		char* map = new char[size];
+
+		
+		//int recived = 0;
+		//while (recived != size)
+		recv(Connections[index], map, size, NULL);
+
+
+		//printf("load map %d\n", recived);
+
+		sendMap(index, map, size);
+		delete[] map;
+	}break;
 
 	default:
 		printf("unknow packet\n");

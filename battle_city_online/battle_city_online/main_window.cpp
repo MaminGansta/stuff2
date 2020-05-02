@@ -9,13 +9,7 @@ struct Sprite : Image
 	float size = 0.0f;
 };
 
-struct vec2
-{
-	float x, y;
-};
-
 bool box_collison_detection(vec2 pos1, float size1, vec2 pos2, float size2);
-
 
 // necessary for map editor
 struct Screan_area
@@ -122,7 +116,7 @@ struct Battle_city_window : Window
 	Battle_city_window()
 	{
 		background.open(L"sprites/battle_city_bg.png");
-
+		
 		init(L"battle_city", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args arg)
 			{
 				Battle_city_window* window = (Battle_city_window*)arg[0];
@@ -155,7 +149,10 @@ struct Battle_city_window : Window
 						window->change_stage(Stage_Main_Menu);
 
 					if (LOWORD(wParam) == window->bLoad_map.id)
+					{
 						window->load_map();
+						window->client.send_map(window->game_map);
+					}
 
 					if (LOWORD(wParam) == window->bCreate_server.id)
 					{
@@ -330,12 +327,22 @@ struct Battle_city_window : Window
 					WaitForSingleObject(window->game_loop_thread, INFINITE);
 				}break;
 
+				
+				// ============ Messages from server =============
+				case WM_SETMAP:
+				{
+					window->game_map = window->client.loaded_map;
+				}break;
+
 				default:
 					return DefWindowProc(hwnd, msg, wParam, lParam);
 				}
 
 				return (LRESULT)0;
 			});
+
+		// set hwnd for server callback
+		client.main_window = hwnd;
 
 		// Load sprites
 		load_sprites();
@@ -499,6 +506,7 @@ struct Battle_city_window : Window
 				break;
 			}
 		}
+
 	}
 
 
@@ -538,6 +546,7 @@ struct Battle_city_window : Window
 	}
 
 
+	// ================ Map manipulation ==================
 	void load_map()
 	{
 		wchar_t filename[128];
@@ -552,21 +561,7 @@ struct Battle_city_window : Window
 			return;
 		}
 
-		int elems = 0, shift = 0;
-		swscanf_s(data, L"%d%n", &elems, &shift);
-
-		std::vector<std::pair<int, vec2>> map;
-
-		for (int i = 0; i < elems; i++)
-		{
-			int temp = 0;
-			int material = 0;
-			float x = 0, y = 0;
-
-			swscanf_s(data + shift, L"%d %f %f%n", &material, &x, &y, &temp);
-			shift += temp;
-			map.push_back(std::make_pair(material, vec2{ x, y }));
-		}
+		auto map = parse_map(data);
 
 		switch (stage)
 		{
@@ -583,7 +578,6 @@ struct Battle_city_window : Window
 		doutput(L"map loaded\n");
 	}
 
-
 	void save_map()
 	{
 		if (edit_map.size() == 0)
@@ -592,23 +586,13 @@ struct Battle_city_window : Window
 			return;
 		}
 
-		int shift = 0;
-		int buffer_size = edit_map.size() * 25;
-		wchar_t* data = new wchar_t[buffer_size];
-
-		shift = swprintf_s(data, 10, L"%d\n", edit_map.size());
-
-		for (int i = 0; i < edit_map.size(); i++)
-		{
-			auto& elem = edit_map[i];
-			shift += swprintf_s(data + shift, buffer_size - shift, L"%d %f %f\n", elem.first, elem.second.x, elem.second.y);
-		}
-
+		auto [data, size] = map_to_data(edit_map);
+		
 		wchar_t filename[128];
 		save_file_window(filename, 128, hwnd, (wchar_t*)L"(*.map)\0*.map\0\0");
 		wcscat_s(filename, L".map");
 
-		write_file(filename, data, shift);
+		write_file(filename, data, size);
 		delete[] data;
 	}
 
@@ -616,3 +600,43 @@ struct Battle_city_window : Window
 
 
 
+// wchar to map
+
+std::vector<std::pair<int, vec2>> parse_map(wchar_t* data)
+{
+	int elems = 0, shift = 0;
+	swscanf_s(data, L"%d%n", &elems, &shift);
+
+	std::vector<std::pair<int, vec2>> map;
+
+	for (int i = 0; i < elems; i++)
+	{
+		int temp = 0;
+		int material = 0;
+		float x = 0, y = 0;
+
+		swscanf_s(data + shift, L"%d %f %f%n", &material, &x, &y, &temp);
+		shift += temp;
+		map.push_back(std::make_pair(material, vec2{ x, y }));
+	}
+	return map;
+}
+
+
+// map to wchar
+
+std::tuple<wchar_t*, int> map_to_data(const std::vector<std::pair<int, vec2>>& map)
+{
+	int shift = 0;
+	int buffer_size = map.size() * 25;
+	wchar_t* data = new wchar_t[buffer_size];
+
+	shift = swprintf_s(data, 10, L"%d\n", map.size());
+
+	for (int i = 0; i < map.size(); i++)
+	{
+		auto& elem = map[i];
+		shift += swprintf_s(data + shift, buffer_size - shift, L"%d %f %f\n", elem.first, elem.second.x, elem.second.y);
+	}
+	return { data, shift };
+}

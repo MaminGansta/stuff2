@@ -1,5 +1,8 @@
 #pragma warning (disable: 4996)
 
+#define WM_SETMAP (WM_USER)
+
+// from Main_window
 enum Packet
 {
 	P_Server_exit,
@@ -11,55 +14,23 @@ enum Packet
 	P_Test,
 
 	// chat 
-	P_ChatMessage
+	P_ChatMessage,
 
 	// game
+	P_Map
 };
 
 bool client_runnig = true;
 
-bool ProccesPacket(Packet packettype, SOCKET& Connection)
-{
-	switch (packettype)
-	{
-	case P_ChatMessage:
-	{
-		char msg[128];
-		recv(Connection, msg, sizeof(msg), NULL);
-		doutput("%s\n", msg);
-	}break;
-
-	case P_Exit:
-	{
-		doutput("Server shutdown\n");
-		Connection = 0;
-	}return false;
-
-	default:
-		doutput("unkown packet\n");
-		return false;
-	}
-}
-
-
-void ClientHandler(SOCKET Connection)
-{
-	Packet packettype;
-	while (client_runnig)
-	{
-		recv(Connection, (char*)&packettype, sizeof(Packet), NULL);
-
-		if (!ProccesPacket(packettype, Connection))
-			break;
-	}
-}
-
-
-
 struct Client
 {
+	HWND main_window;
 	SOCKET Connection = 0;
 	HANDLE server_callback = 0;
+
+	// game data
+	std::vector<std::pair<int, vec2>> loaded_map;
+
 
 	Client()
 	{
@@ -74,6 +45,9 @@ struct Client
 
 	void Connect(const std::wstring& ip, int port)
 	{
+		bool ProccesPacket(Packet packettype, Client & client);
+		void ClientHandler(Client * client);
+
 		if (Connection != 0) return;
 
 		// conver wchar_t to char
@@ -99,7 +73,7 @@ struct Client
 		client_runnig = true;
 
 		// create thread with receive msg hadnler
-		server_callback = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)Connection, NULL, NULL);
+		server_callback = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)this, NULL, NULL);
 	}
 
 	void Disconnect()
@@ -125,6 +99,21 @@ struct Client
 		WSACleanup();
 	}
 
+	void send_map(const std::vector<std::pair<int, vec2>>& map)
+	{
+		Packet packettype = P_Map;
+		send(Connection, (char*)&packettype, sizeof(Packet), NULL);
+		
+		auto [data, size] = map_to_data(map);
+		size *= sizeof(wchar_t);
+
+		send(Connection, (char*)&size, sizeof(int), NULL);
+
+		//int sended = 0;
+		//while (sended != size)
+		send(Connection, (char*)data, size, NULL);
+	}
+
 
 	void send_server_close()
 	{
@@ -147,6 +136,70 @@ struct Client
 
 		Sleep(5000);
 	}
-
-
 };
+
+
+
+bool ProccesPacket(Packet packettype, Client& client)
+{
+	doutput("%d\n", packettype);
+
+	switch (packettype)
+	{
+
+	case P_InitConnection:
+	{
+
+	}break;
+
+	case P_ChatMessage:
+	{
+		char msg[128];
+		recv(client.Connection, msg, sizeof(msg), NULL);
+		doutput("%s\n", msg);
+	}break;
+
+	case P_Exit:
+	{
+		doutput("Server shutdown\n");
+		client.Connection = 0;
+	}return false;
+
+	case P_Map:
+	{
+		doutput(L"msg\n");
+
+		int size = 0;
+		recv(client.Connection, (char*)&size, sizeof(int), NULL);
+
+		char* map = new char[size];
+		recv(client.Connection, map, size, NULL);
+		
+		client.loaded_map = parse_map((wchar_t*)map);
+
+		// Send message to the widnow to update the map
+		SendMessage(client.main_window, WM_SETMAP, 0, 0);
+	}break;
+
+	default:
+		doutput("unkown packet\n");
+		return false;
+	}
+
+	return true;
+}
+
+
+
+void ClientHandler(Client* client)
+{
+	Packet packettype;
+	while (client_runnig)
+	{
+		recv(client->Connection, (char*)&packettype, sizeof(Packet), NULL);
+
+		if (!ProccesPacket(packettype, *client))
+			break;
+	}
+}
+

@@ -6,6 +6,11 @@
 
 bool runnig = false;
 
+struct vec2 { float x, y; };
+
+std::tuple<wchar_t*, int> map_to_data(const std::vector<std::pair<int, vec2>>& map);
+std::vector<std::pair<int, vec2>> parse_map(wchar_t* data);
+
 #include "client.cpp"
 #include "server.cpp"
 #include "main_window.cpp"

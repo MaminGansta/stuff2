@@ -55,3 +55,20 @@ void sendMessage(int index, const std::wstring& msg)
 
 
 // Game data
+void sendMap(int index, char* map, int size)
+{
+	printf("%d\n", nConnections);
+
+	for (int i = 0; i < nConnections; i++)
+	{
+		Packet packettype = P_Map;
+		if (i != index)
+		{
+			printf("%d\n", i);
+
+			send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
+			send(Connections[i], (char*)&size, sizeof(int), NULL);
+			send(Connections[i], map, size, NULL);
+		}
+	}
+}
