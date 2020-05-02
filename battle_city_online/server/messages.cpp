@@ -72,3 +72,15 @@ void sendMap(int index, char* map, int size)
 		}
 	}
 }
+
+void sendStart(int index)
+{
+	for (int i = 0; i < nConnections; i++)
+	{
+		if (i != index)
+		{
+			Packet packettype = P_Start;
+			send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
+		}
+	}
+}

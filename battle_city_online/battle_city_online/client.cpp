@@ -1,6 +1,7 @@
 #pragma warning (disable: 4996)
 
 #define WM_SETMAP (WM_USER)
+#define WM_START (WM_USER + 1)
 
 // from Main_window
 enum Packet
@@ -17,7 +18,8 @@ enum Packet
 	P_ChatMessage,
 
 	// game
-	P_Map
+	P_Map,
+	P_Start
 };
 
 bool client_runnig = true;
@@ -114,6 +116,11 @@ struct Client
 		send(Connection, (char*)data, size, NULL);
 	}
 
+	void start_game()
+	{
+		Packet packettype_send = P_Start;
+		send(Connection, (char*)&packettype_send, sizeof(Packet), NULL);
+	}
 
 	void send_server_close()
 	{
@@ -179,6 +186,11 @@ bool ProccesPacket(Packet packettype, Client& client)
 
 		// Send message to the widnow to update the map
 		SendMessage(client.main_window, WM_SETMAP, 0, 0);
+	}break;
+
+	case P_Start:
+	{
+		SendMessage(client.main_window, WM_START, 0, 0);
 	}break;
 
 	default:

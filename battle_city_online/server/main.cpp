@@ -26,7 +26,8 @@ enum Packet
 	P_ChatMessage,
 
 	// game
-	P_Map
+	P_Map,
+	P_Start
 };
 
 bool wm_close = false;
@@ -116,20 +117,16 @@ bool ProccesPacket(int index, Packet packettype)
 		int size = 0;
 		recv(Connections[index], (char*)&size, sizeof(int), NULL);
 
-		printf("load size %d\n", size);
-
 		char* map = new char[size];
-
-		
-		//int recived = 0;
-		//while (recived != size)
 		recv(Connections[index], map, size, NULL);
-
-
-		//printf("load map %d\n", recived);
-
+		
 		sendMap(index, map, size);
 		delete[] map;
+	}break;
+
+	case P_Start:
+	{
+		sendStart(index);
 	}break;
 
 	default:

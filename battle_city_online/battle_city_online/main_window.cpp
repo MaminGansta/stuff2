@@ -121,13 +121,14 @@ struct Battle_city_window : Window
 			{
 				Battle_city_window* window = (Battle_city_window*)arg[0];
 
+				// game loop declaration
+				void game_loop(Battle_city_window * window);
+
 				switch (msg)
 				{
 				case WM_COMMAND:
 				{
-					// game loop declaration
-					void game_loop(Battle_city_window * window);
-
+					
 					// Main menu
 					if (LOWORD(wParam) == window->bClose.id)
 					{
@@ -173,6 +174,8 @@ struct Battle_city_window : Window
 					if (LOWORD(wParam) == window->bStart.id)
 					{
 						window->change_stage(Stage_Game);
+						window->client.start_game();
+
 						window->game_loop_thread =
 							CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)game_loop, LPVOID(window), NULL, NULL);
 					}
@@ -332,6 +335,13 @@ struct Battle_city_window : Window
 				case WM_SETMAP:
 				{
 					window->game_map = window->client.loaded_map;
+				}break;
+
+				case WM_START:
+				{
+					window->change_stage(Stage_Game);
+					window->game_loop_thread =
+						CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)game_loop, LPVOID(window), NULL, NULL);
 				}break;
 
 				default:

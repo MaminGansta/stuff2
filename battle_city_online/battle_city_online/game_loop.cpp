@@ -74,7 +74,7 @@ void game_loop(Battle_city_window* window)
 	// context to render
 	Canvas& surface = window->canvas;
 	Sprite* envinment = window->environment;
-	auto& map = window->game_map;
+	auto map = window->game_map;
 
 
 	// Player on this client connection
