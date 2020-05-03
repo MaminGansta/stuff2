@@ -12,6 +12,8 @@
 
 #define MAX_CLIENTS 4
 
+
+
 enum Packet
 {
 	P_Server_exit,
@@ -35,7 +37,6 @@ enum Packet
 };
 
 // game data
-
 struct Bullet
 {
 	float pos_x = -1.0f, pos_y = -1.0f;
@@ -52,6 +53,9 @@ struct Tank
 	Bullet bullet;
 	float angle = 0;
 	float speed = 0.2f;
+
+	wchar_t name[16];
+	bool alive = true;
 };
 
 Tank players[4];
@@ -59,20 +63,55 @@ Tank players[4];
 int nDestroy = 0;
 int destroy[4];
 
+
+// flags
+bool server_running = true;
 bool game = true;
 HANDLE hGame_thread;
 
-bool wm_close = false;
+
+// server
+SOCKET sListener;
 HANDLE threads[MAX_CLIENTS];
-SOCKET Connections [MAX_CLIENTS];
+
 int nConnections = 0;
+SOCKET Connections[MAX_CLIENTS];
 std::shared_mutex mutex;
 
 
+
+// Some complete send funtions
 #include "messages.cpp"
 
 
 
+/*
+	Console callback. Catch console close event.
+*/
+BOOL WINAPI console_callback(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType)
+	{
+		// if console was closed
+	case CTRL_CLOSE_EVENT:
+		sendCloseForAll();
+		server_running = true;
+		game = false;
+		closesocket(sListener);
+		return TRUE;
+
+	default:
+		return FALSE;
+	}
+}
+
+
+/*
+	When game is start. Begin send info to the players 
+	in separate thread.
+
+	Also in other threads recive info from players.
+*/
 void send_game_data()
 {
 	while (game)
@@ -82,7 +121,6 @@ void send_game_data()
 		Packet packet = P_Player;
 		for (int i = 0; i < nConnections; i++)
 		{
-
 			send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
 
 			int players_amount = nConnections - 1;
@@ -100,8 +138,6 @@ void send_game_data()
 		{
 			for (int i = 0; i < nConnections; i++)
 			{
-				printf("%d\n", nDestroy);
-
 				send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
 				send(Connections[i], (char*)&nDestroy, sizeof(int), NULL);
 
@@ -111,28 +147,14 @@ void send_game_data()
 			nDestroy = 0;
 		}
 	}
+
+	printf("game thread done\n");
 }
 
 
-// console callback
-BOOL WINAPI console_callback(DWORD fdwCtrlType)
-{
-	switch (fdwCtrlType)
-	{
-		// if console was closed
-	case CTRL_CLOSE_EVENT:
-		sendCloseForAll();
-		wm_close = true;
-		game = false;
-		return TRUE;
-
-	default:
-		return FALSE;
-	}
-}
-
-
-
+/*
+	Handle clients messages.
+*/
 bool ProccesPacket(int index, Packet packettype)
 {
 	//printf("packettype: %d\n", packettype);
@@ -140,16 +162,19 @@ bool ProccesPacket(int index, Packet packettype)
 	switch (packettype)
 	{
 	
+	// Init connetion
 	case P_InitConnection:
 	{
 
 	}break;
 
+	// Test packet
 	case P_Test:
 	{
 		sendTest(index);
 	}
 
+	// Chat message
 	case P_ChatMessage:
 	{
 		char msg[128];
@@ -169,6 +194,10 @@ bool ProccesPacket(int index, Packet packettype)
 		}
 	}break;
 
+
+	/*
+		Client want to disconnect.
+	*/
 	case P_Exit:
 	{
 		std::unique_lock<std::shared_mutex> lock(mutex);
@@ -181,24 +210,40 @@ bool ProccesPacket(int index, Packet packettype)
 		printf("client disconnect\n");
 	}return false;
 
+
+	/*
+		Disconnect all clients, close send_game_info thread if it run.
+		Close main socket and go to section clean up.
+
+		(When host close his game or go out from lobby)
+	*/
 	case P_Server_exit:
 	{
 		printf("Server shudown\n");
+		server_running = false;
+		game = false;
 		sendCloseForAll();
+		closesocket(sListener);
 	}return false;
 
+	/*
+		Recv map from host and send to the clients.
+	*/
 	case P_Map:
 	{
 		int size = 0;
 		recv(Connections[index], (char*)&size, sizeof(int), NULL);
 
-		char* map = new char[size];
+		char* map = (char*)malloc(size);
 		recv(Connections[index], map, size, NULL);
 		
 		sendMap(index, map, size);
-		delete[] map;
+		free(map);
 	}break;
 
+	/*
+		Run game on clients machines
+	*/
 	case P_Start:
 	{
 		game = true;
@@ -206,11 +251,20 @@ bool ProccesPacket(int index, Packet packettype)
 		hGame_thread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)send_game_data, NULL, NULL, NULL);
 	}break;
 
+	/*
+		Recv player info and save it on server.
+		Thean in game send info, send it to all
+		players.
+	*/
 	case P_Player:
 	{
 		recv(Connections[index], (char*)&players[index], sizeof(Tank), NULL);
 	}break;
 
+	/*
+		Recv destoyed obj info and store on server.
+		Also in game send info, send it to all players.
+	*/
 	case P_Destroy:
 	{
 		int id;
@@ -226,17 +280,21 @@ bool ProccesPacket(int index, Packet packettype)
 	return true;
 }
 
-
+/*
+	Start in separe thread. And recv Clients messages
+*/
 void ClientHandler(int index)
 {
 	Packet packettype;
-	while (true)
+	while (server_running)
 	{
 		recv(Connections[index], (char*)&packettype, sizeof(Packet), NULL);
 
 		if (!ProccesPacket(index, packettype))
 			break;
 	}
+
+	printf("client %d disconnected\n", Connections[index]);
 }
 
 
@@ -249,9 +307,9 @@ int main(int argc, const char* argv[])
 		return 1;
 	}
 
-
-	WSADATA	wsd;
 	// start up the WSA lib
+	WSADATA	wsd;
+
 	if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
 	{
 		printf("Failed to load Winsock library!\n");
@@ -265,10 +323,9 @@ int main(int argc, const char* argv[])
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = inet_addr(argv[0]);
 	server.sin_port = htons(atoi(argv[1]));
-	//server.sin_addr.s_addr = inet_addr("192.168.0.104");
-	//server.sin_port = 5678;
 
-	SOCKET sListener = socket(AF_INET, SOCK_STREAM, NULL);
+
+	sListener = socket(AF_INET, SOCK_STREAM, NULL);
 	bind(sListener, (SOCKADDR*)&server, sizeof(server));
 	listen(sListener, SOMAXCONN);
 
@@ -280,12 +337,13 @@ int main(int argc, const char* argv[])
 		int server_size = sizeof(server);
 		SOCKET connection = accept(sListener, (SOCKADDR*)&server, &server_size);
 
-		// if window was closed by x
-		if (wm_close) break;
+		// if window was closed.
+		if (!server_running) break;
 
 
-		if (nConnections > MAX_CLIENTS)
+		if (nConnections >= MAX_CLIENTS)
 		{
+			printf("server is full. Client %d cant connect\n", connection);
 			sendServerFull(connection);
 			shutdown(connection, CF_BOTH);
 			continue;
@@ -297,18 +355,18 @@ int main(int argc, const char* argv[])
 			continue;
 		}
 
+		// take a lock (Same lock in delete client section)
 		std::unique_lock<std::shared_mutex> lock(mutex);
+
 		Connections[nConnections] = connection;
-
-
 		printf("New client connected. Socket %d\n", connection);
 		sendInit(nConnections);
 
-		int id = nConnections;
-		threads[nConnections] = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)id, NULL, NULL);
+		threads[nConnections] = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)nConnections, NULL, NULL);
 		nConnections++;
 	}
 
+	printf("server done\n");
 
 	// clean up
 	for (int i = 0; i < nConnections; i++)

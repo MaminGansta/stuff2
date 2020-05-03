@@ -57,7 +57,7 @@ void sendMessage(int index, const std::wstring& msg)
 // Game data
 void sendMap(int index, char* map, int size)
 {
-	printf("%d\n", nConnections);
+	printf("send map to %d\n", index);
 
 	for (int i = 0; i < nConnections; i++)
 	{

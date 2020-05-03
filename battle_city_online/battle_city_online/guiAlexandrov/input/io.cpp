@@ -26,7 +26,7 @@ T* read_file(T* file_name , int& len)
 	len = GetFileSize(hFile, NULL);
 	DWORD nBytesRead;
 	BOOL bResult;
-	T* data = new T[len];
+	T* data = (T*)malloc(sizeof(T) * len);
 
 	bResult = ReadFile(hFile, data, len * sizeof(T), &nBytesRead, NULL);
 

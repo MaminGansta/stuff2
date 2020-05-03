@@ -43,6 +43,9 @@ struct Tank
 	Bullet bullet;
 	float angle = 0;
 	float speed = 0.2f;
+
+	wchar_t name[16];
+	bool alive = true;
 };
 
 int nPlayers = 0;
@@ -50,7 +53,6 @@ Tank players[4];
 
 int nDestroy = 0;
 int destroy[4];
-
 
 bool client_runnig = true;
 
@@ -80,7 +82,8 @@ struct Client
 		bool ProccesPacket(Packet packettype, Client & client);
 		void ClientHandler(Client * client);
 
-		if (Connection != 0) return;
+		if (Connection != 0)
+			Disconnect();
 
 		// conver wchar_t to char
 		char ip_utf8[32];
@@ -110,9 +113,13 @@ struct Client
 
 	void Disconnect()
 	{
-		Packet packet_exit = P_Exit;
-		send(Connection, (char*)&packet_exit, sizeof(Packet), NULL);
-		shutdown(Connection, SD_BOTH);
+		if (Connection)
+		{
+			Packet packet_exit = P_Exit;
+			send(Connection, (char*)&packet_exit, sizeof(Packet), NULL);
+			shutdown(Connection, SD_BOTH);
+		}
+
 		Connection = 0;
 		client_runnig = false;
 	}
@@ -133,6 +140,8 @@ struct Client
 
 	void send_map(const std::vector<std::pair<int, vec2>>& map)
 	{
+		if (Connection == 0) return;
+
 		Packet packettype = P_Map;
 		send(Connection, (char*)&packettype, sizeof(Packet), NULL);
 		
@@ -140,9 +149,6 @@ struct Client
 		size *= sizeof(wchar_t);
 
 		send(Connection, (char*)&size, sizeof(int), NULL);
-
-		//int sended = 0;
-		//while (sended != size)
 		send(Connection, (char*)data, size, NULL);
 	}
 
@@ -156,6 +162,7 @@ struct Client
 	{
 		Packet packettype_send = P_Server_exit;
 		send(Connection, (char*)&packettype_send, sizeof(Packet), NULL);
+		//Connection = 0;
 	}
 
 	void send_game_data()
@@ -174,10 +181,6 @@ struct Client
 		Sleep(5000);
 	}
 
-	void send_player()
-	{
-
-	}
 };
 
 
@@ -204,21 +207,24 @@ bool ProccesPacket(Packet packettype, Client& client)
 	case P_Exit:
 	{
 		doutput("Server shutdown\n");
+		client_runnig = false;
+		runnig = false;
 		client.Connection = 0;
 	}return false;
 
 	case P_Map:
 	{
-		doutput(L"msg\n");
+		doutput(L"map recv\n");
 
 		int size = 0;
 		recv(client.Connection, (char*)&size, sizeof(int), NULL);
 
-		char* map = new char[size];
-		recv(client.Connection, map, size, NULL);
+		wchar_t* map = (wchar_t*)malloc(size);
+		recv(client.Connection, (char*)map, size, NULL);
 		
-		client.loaded_map = parse_map((wchar_t*)map);
+		client.loaded_map = parse_map(map);
 
+		free(map);
 		// Send message to the widnow to update the map
 		SendMessage(client.main_window, WM_SETMAP, 0, 0);
 	}break;

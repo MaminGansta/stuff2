@@ -36,7 +36,6 @@ struct Screan_area
 };
 
 
-
 enum Window_stage
 {
 	Stage_Main_Menu,
@@ -147,18 +146,24 @@ struct Battle_city_window : Window
 
 					// Host room
 					if (LOWORD(wParam) == window->bHost_back.id)
+					{
+
+						if (window->server.runnig())
+							window->client.send_server_close();
+
+						window->client.Disconnect();
 						window->change_stage(Stage_Main_Menu);
+					}
 
 					if (LOWORD(wParam) == window->bLoad_map.id)
 					{
 						window->load_map();
-						window->client.send_map(window->game_map);
+						//window->client.send_map(window->game_map);
 					}
 
 					if (LOWORD(wParam) == window->bCreate_server.id)
 					{
 						wchar_t args[128] = L"\0";
-						//wcscat_s(args, 128, L"\"battle_city_server.exe \"");
 						wcscat_s(args, 128, window->tIp.get_text());
 						wcscat_s(args, 128, L" ");
 						wcscat_s(args, 128, window->tPort.get_text());
@@ -173,6 +178,20 @@ struct Battle_city_window : Window
 
 					if (LOWORD(wParam) == window->bStart.id)
 					{
+						if (window->game_map.size() == 0)
+						{
+							MessageBox(window->hwnd, L"Load map", NULL, MB_OK);
+							break;
+						}
+
+						if (!window->server.runnig())
+						{
+							MessageBox(window->hwnd, L"Run server", NULL, MB_OK);
+							break;
+						}
+
+						window->client.send_map(window->game_map);
+
 						window->change_stage(Stage_Game);
 						window->client.start_game();
 
@@ -186,7 +205,10 @@ struct Battle_city_window : Window
 										  wtoi(window->tClient_Port.get_text()));
 
 					if (LOWORD(wParam) == window->bClient_back.id)
+					{
+						window->client.Disconnect();
 						window->change_stage(Stage_Main_Menu);
+					}
 
 				}break;
 
@@ -325,7 +347,9 @@ struct Battle_city_window : Window
 				{
 					if (window->server.runnig())
 						window->client.send_server_close();
-						
+					
+					window->client.Disconnect();
+
 					runnig = false;
 					WaitForSingleObject(window->game_loop_thread, INFINITE);
 				}break;
@@ -432,7 +456,7 @@ struct Battle_city_window : Window
 	}
 
 	/*
-		Hide and show gui elements when then used or not.
+		Hide and show gui elements when they used or not.
 	*/
 	void change_stage(Window_stage new_stage)
 	{
@@ -468,12 +492,19 @@ struct Battle_city_window : Window
 				bConnect2Server.hide();
 				bClient_back.hide();
 				tClientLogInfo.hide();
-				break;
-			}
+			}break;
 
 			case Stage_Map_editor:
 			{
 				edit_map.clear();
+			}break;
+
+			case Stage_Game:
+			{
+				if (server.runnig())
+					client.send_server_close();
+				else
+					client.Disconnect();
 			}break;
 
 		}
@@ -559,32 +590,32 @@ struct Battle_city_window : Window
 	// ================ Map manipulation ==================
 	void load_map()
 	{
-		wchar_t filename[128];
+		wchar_t filename[256];
 		open_file_window(filename, 128, hwnd, (wchar_t*)L"Map File(*.map)\0*.map\0\0");
-
+		//
 		int len = 0;
 		wchar_t* data = read_file(filename, len);
-
+		
 		if (len == 0)
 		{
 			doutput(L"map load failled\n");
 			return;
 		}
-
+		
 		auto map = parse_map(data);
-
+		
 		switch (stage)
 		{
 			case Stage_Host_Room:
 				game_map = std::move(map);
 				break;
-
+		
 			case Stage_Map_editor:
 				edit_map = std::move(map);
 				break;
 		}
-
-		delete data;
+		
+		free(data);
 		doutput(L"map loaded\n");
 	}
 
@@ -603,7 +634,7 @@ struct Battle_city_window : Window
 		wcscat_s(filename, L".map");
 
 		write_file(filename, data, size);
-		delete[] data;
+		free(data);
 	}
 
 };
@@ -639,7 +670,7 @@ std::tuple<wchar_t*, int> map_to_data(const std::vector<std::pair<int, vec2>>& m
 {
 	int shift = 0;
 	int buffer_size = map.size() * 25;
-	wchar_t* data = new wchar_t[buffer_size];
+	wchar_t* data = (wchar_t*)malloc(buffer_size * sizeof(wchar_t));
 
 	shift = swprintf_s(data, 10, L"%d\n", map.size());
 
