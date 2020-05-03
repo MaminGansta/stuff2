@@ -49,26 +49,26 @@ void game_loop(Battle_city_window* window)
 	Sprite* envinment = window->environment;
 
 	// array of explosions
-	small::array<Explosion, 10> explosions;
+	small::array<Explosion, 100> explosions;
 
 	// load map
 	auto map = window->game_map;
 
+	// buffer for all stuff
+	wchar_t buffer[32] = L"\0";
 
-	// contain fps to render it on the screan
-	wchar_t fps_buffer[32] = L"0";
-	float fps_info_timeout = 2.0f;
-
-	int nAlives = 4;
 
 	runnig = true;
 	while (runnig)
 	{
+		// if game is start agen
+		Sleep(20);
+
 		// clear input keys
 		Input::keys_buffer_clear();
 
 		// Player on this client
-		Tank p{ 0.9f, 0.9f };
+		Tank p{ init_pos[0], init_pos[1] };
 		float bullet_delay = 0.5f;
 
 		// load nickname
@@ -76,14 +76,17 @@ void game_loop(Battle_city_window* window)
 		memmove(p.name, window->tNickname.get_text(), sizeof(wchar_t) * 16);
 
 
+		// Game info
+		int nAlives = 4;
+
+
 		// send init data
 		Packet packet = P_Player;
 		send(window->client.Connection, (char*)&packet, sizeof(Packet), NULL);
 		send(window->client.Connection, (char*)&p, sizeof(Tank), NULL);
-		Sleep(50);
 
 		Timer timer;
-		while (client_runnig)
+		while (client_runnig && runnig)
 		{
 			if (!runnig) break;
 
@@ -152,6 +155,17 @@ void game_loop(Battle_city_window* window)
 				}
 			}
 
+			if (!collided)
+			{
+				for (int i = 0; i < nPlayers; i++)
+				{
+					if (box_collison_detection({ new_x - tank->size * 0.5f , new_y - tank->size * 0.5f }, tank->size,
+						{ players[i].pos_x - tank->size * 0.5f , players[i].pos_y - tank->size * 0.5f }, tank->size))
+					{
+						collided = true;
+					}
+				}
+			}
 
 			// player
 			if (!collided &&
@@ -163,6 +177,7 @@ void game_loop(Battle_city_window* window)
 				p.pos_y = new_y;
 			}
 
+			
 			// proccess bullet
 			collided = false;
 			int i = -1;
@@ -224,7 +239,10 @@ void game_loop(Battle_city_window* window)
 					vec2{ players[i].pos_x, players[i].pos_y }, bullet.size))
 				{
 					if (players[i].alive)
+					{
+						p.Score += 100;
 						explosions.push_back(Explosion{ players[i].pos_x, players[i].pos_y, 3 });
+					}
 				}
 			}
 
@@ -344,19 +362,26 @@ void game_loop(Battle_city_window* window)
 			}
 
 			// Render FPS on right top of window
-			if ((fps_info_timeout -= timer.elapsed) < 0.0f)
+			swprintf_s(buffer, L"FPS %d", timer.FPS);
+			render_text(surface, 0.9f, 0.96f, buffer, Color(240, 150, 0), get_def_font(20));
+
+			// Render score
+			swprintf_s(buffer, L"%d %s", p.Score, p.name);
+			render_text(surface, 0.9f, 0.93f, buffer, Color(240, 200, 0), get_def_font(16));
+
+			for (int i = 0; i < nPlayers; i++)
 			{
-				swprintf_s(fps_buffer, L"%d", timer.FPS);
-				fps_info_timeout = 2.0f;
+				swprintf_s(buffer, L"%d %s", players[i].Score, players[i].name);
+				render_text(surface, 0.9f, 0.9f - i * 0.03, buffer, Color(240, 200, 0), get_def_font(16));
 			}
-			render_text(surface, 0.9f, 0.94f, fps_buffer, Color(240, 150, 0), get_def_font(25));
 
 			// Render canvas on the screan
 			window->render_canvas();
 		}
 	}
 
-	window->change_stage(Stage_Main_Menu);
+	if (!wm_close)
+		window->change_stage(Stage_Main_Menu);
 }
 
 

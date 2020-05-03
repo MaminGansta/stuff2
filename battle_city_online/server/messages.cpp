@@ -75,6 +75,15 @@ void sendMap(int index, char* map, int size)
 
 void sendStart(int index)
 {
+	int init_pos_ind = (rand() % 8) ^ 1;
+
+	for (int i = 0; i < nConnections; i++)
+	{
+		Packet packettype = P_InitPosition;
+		send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
+		send(Connections[i], (char*)(init_pos + (2*i) % 8), sizeof(float) * 2, NULL);
+	}
+
 	for (int i = 0; i < nConnections; i++)
 	{
 		if (i != index)

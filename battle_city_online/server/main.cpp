@@ -13,7 +13,6 @@
 #define MAX_CLIENTS 4
 
 
-
 enum Packet
 {
 	P_Server_exit,
@@ -32,6 +31,7 @@ enum Packet
 	P_Start,
 	P_End,
 
+	P_InitPosition,
 	P_Player,
 	P_Destroy
 };
@@ -55,18 +55,22 @@ struct Tank
 	float speed = 0.2f;
 
 	wchar_t name[16];
+	int Score = 0;
 	bool alive = true;
 };
-
 Tank players[4];
+
+float init_pos[8] = { 0.03f, 0.03f,  0.9f, 0.9f,  0.9f, 0.03f,  0.03f, 0.9f };
 
 int nDestroy = 0;
 int destroy[4];
 
+int map_size;
+char* cur_map = NULL;
 
 // flags
 bool server_running = true;
-bool game = true;
+bool game = false;
 HANDLE hGame_thread;
 
 
@@ -231,14 +235,13 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Map:
 	{
-		int size = 0;
-		recv(Connections[index], (char*)&size, sizeof(int), NULL);
+		recv(Connections[index], (char*)&map_size, sizeof(int), NULL);
 
-		char* map = (char*)malloc(size);
-		recv(Connections[index], map, size, NULL);
+		free(cur_map);
+		char* cur_map = (char*)malloc(map_size);
+		recv(Connections[index], cur_map, map_size, NULL);
 		
-		sendMap(index, map, size);
-		free(map);
+		sendMap(index, cur_map, map_size);
 	}break;
 
 	/*
@@ -248,6 +251,7 @@ bool ProccesPacket(int index, Packet packettype)
 	{
 		game = true;
 		sendStart(index);
+		printf("Send start to %d", index);
 		hGame_thread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)send_game_data, NULL, NULL, NULL);
 	}break;
 
@@ -341,7 +345,7 @@ int main(int argc, const char* argv[])
 		if (!server_running) break;
 
 
-		if (nConnections >= MAX_CLIENTS)
+		if (nConnections >= MAX_CLIENTS || game)
 		{
 			printf("server is full. Client %d cant connect\n", connection);
 			sendServerFull(connection);

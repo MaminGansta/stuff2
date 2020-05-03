@@ -36,6 +36,9 @@ struct Screan_area
 };
 
 
+// if window was focred
+bool wm_close = false;
+
 enum Window_stage
 {
 	Stage_Main_Menu,
@@ -345,10 +348,11 @@ struct Battle_city_window : Window
 
 				case WM_CLOSE:
 				{
+					wm_close = true;
 					if (window->server.runnig())
 						window->client.send_server_close();
-					
-					window->client.Disconnect();
+					else
+						window->client.Disconnect();
 
 					runnig = false;
 					WaitForSingleObject(window->game_loop_thread, INFINITE);
@@ -366,6 +370,14 @@ struct Battle_city_window : Window
 					window->change_stage(Stage_Game);
 					window->game_loop_thread =
 						CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)game_loop, LPVOID(window), NULL, NULL);
+				}break;
+
+				case WM_UPDATE_LOG:
+				{
+					if (window->stage == Stage_Host_Room)
+						window->tHostLogInfo.set_text(window->client.log.c_str());
+					else if (window->stage == Stage_Client_Room)
+						window->tClientLogInfo.set_text(window->client.log.c_str());
 				}break;
 
 				default:
@@ -580,7 +592,7 @@ struct Battle_city_window : Window
 		explosion[2].open(L"sprites/bang3.png");
 		explosion[0].size = 0.02f;
 		explosion[1].size = 0.05f;
-		explosion[2].size = 0.08f;
+		explosion[2].size = 0.1f;
 
 		bullet.open(L"sprites/bullet.png");
 		bullet.size = 0.02f;
