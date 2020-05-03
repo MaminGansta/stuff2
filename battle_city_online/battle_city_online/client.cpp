@@ -115,6 +115,8 @@ struct Client
 		client_runnig = true;
 		// create thread with receive msg hadnler
 		server_callback = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)this, NULL, NULL);
+
+		SendMessage(main_window, WM_UPDATE_LOG, 0, 0);
 	}
 
 	void Disconnect()
@@ -124,6 +126,8 @@ struct Client
 			Packet packet_exit = P_Exit;
 			send(Connection, (char*)&packet_exit, sizeof(Packet), NULL);
 			shutdown(Connection, SD_BOTH);
+
+			SendMessage(main_window, WM_UPDATE_LOG, 0, 0);
 		}
 
 		Connection = 0;
@@ -156,6 +160,8 @@ struct Client
 
 		send(Connection, (char*)&size, sizeof(int), NULL);
 		send(Connection, (char*)data, size, NULL);
+
+		SendMessage(main_window, WM_UPDATE_LOG, 0, 0);
 	}
 
 	void start_game()
@@ -193,8 +199,6 @@ struct Client
 
 bool ProccesPacket(Packet packettype, Client& client)
 {
-	SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
-
 	switch (packettype)
 	{
 
@@ -273,6 +277,7 @@ bool ProccesPacket(Packet packettype, Client& client)
 		return false;
 	}
 
+	SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
 	return true;
 }
 
