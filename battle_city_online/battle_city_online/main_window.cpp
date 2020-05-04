@@ -434,14 +434,14 @@ struct Battle_city_window : Window
 		bStart.init(hwnd, L"Start", 0.75f, 0.05f, 0.2f, 0.1f);
 		set_font_size(bStart.hwnd, 35);
 
-		tHostLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f);
+		tHostLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f, RESIZABLE, DEF_TEXT | WS_VSCROLL);
 
 		// Client room
 		lClient_Ip_port.init(hwnd, L" IP / PORT", 0.15f, 0.9f, 0.2f, 0.08f);
 		set_font_size(lClient_Ip_port.hwnd, 32);
 
 		tClient_Ip.init(hwnd, 0.15f, 0.8f, 0.3f, 0.1f);
-		tClient_Ip.set_text(L"192.168.0.104");
+		tClient_Ip.set_text(L"109.161.95.195");
 		set_font_size(tClient_Ip.hwnd, 32);
 
 		tClient_Port.init(hwnd, 0.45f, 0.8f, 0.15f, 0.1f);
@@ -454,7 +454,7 @@ struct Battle_city_window : Window
 		bClient_back.init(hwnd, L"Back", 0.05f, 0.05f, 0.2f, 0.1f);
 		set_font_size(bClient_back.hwnd, 35);
 
-		tClientLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f);
+		tClientLogInfo.init(hwnd, 0.15f, 0.2f, 0.7f, 0.55f, RESIZABLE, DEF_TEXT | WS_VSCROLL);
 
 
 		// hide all components and load Main menu stage
