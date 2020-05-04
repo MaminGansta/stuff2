@@ -85,7 +85,7 @@ void sendStart(int index)
 		
 		packet = P_InitPosition;
 		send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
-		send(Connections[i], (char*)(init_pos + (2*i + init_pos_ind) % 8), sizeof(float) * 2, NULL);
+		send(Connections[i], (char*)(init_pos + (2*i + init_pos_ind) % 7), sizeof(float) * 2, NULL);
 	}
 
 	for (int i = 0; i < nConnections; i++)

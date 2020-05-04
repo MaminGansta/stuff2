@@ -99,7 +99,7 @@ void output(const wchar_t* format, ...)
 HINSTANCE hInst;
 
 #ifndef MAX_THREADS
-#define MAX_THREADS 8
+#define MAX_THREADS 16
 #endif
 
 // unity build

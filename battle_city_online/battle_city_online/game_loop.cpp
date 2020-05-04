@@ -108,25 +108,25 @@ void game_loop(Battle_city_window* window)
 				p.sprite = (p.sprite + 1) & 1;
 				p.angle = PI * 1.5f;
 			}
-			else if (Input::pressed(VK_DOWN))
+			if (Input::pressed(VK_DOWN))
 			{
 				new_y = p.pos_y - p.speed * timer.elapsed;
 				p.sprite = (p.sprite + 1) & 1;
 				p.angle = PI * 0.5f;
 			}
-			else if (Input::pressed(VK_RIGHT))
+			if (Input::pressed(VK_RIGHT))
 			{
 				new_x = p.pos_x + p.speed * timer.elapsed;
 				p.sprite = (p.sprite + 1) & 1;
 				p.angle = 0;
 			}
-			else if (Input::pressed(VK_LEFT))
+			if (Input::pressed(VK_LEFT))
 			{
 				new_x = p.pos_x - p.speed * timer.elapsed;
 				p.sprite = (p.sprite + 1) & 1;
 				p.angle = PI;
 			}
-			else if (Input::pressed(VK_SPACE))
+			if (Input::pressed(VK_SPACE))
 			{
 				// if last bullet not active now
 				if (p.alive && p.bullet.pos_x == -1.0f && p.bullet.pos_y == -1.0f && bullet_delay < 0.0f)

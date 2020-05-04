@@ -242,13 +242,12 @@ bool ProccesPacket(int index, Packet packettype)
 		free(cur_map);
 		char* cur_map = (char*)malloc(map_size);
 
-	
 		int recived = 0;
 		int left = map_size;
 		int ind = 0;
-		while (recived != map_size)
+		while (left)
 		{
-			recived += recv(Connections[index], &cur_map[recived], left, NULL);
+			recived = recv(Connections[index], &cur_map[ind], left, NULL);
 			left -= recived;
 			ind += recived;
 		}

@@ -235,26 +235,29 @@ bool ProccesPacket(Packet packettype, Client& client)
 
 	case P_Map:
 	{
-		client.log += L"map was loaded\r\n";
-
 		int size = 0;
 		recv(client.Connection, (char*)&size, sizeof(int), NULL);
 
-		wchar_t* map = (wchar_t*)malloc(size);
+		char* map = (char*)malloc(size);
 
 		int recived = 0;
 		int left = size;
 		int ind = 0;
-		while (recived != size)
+		while (left)
 		{
-			recived = recv(client.Connection, (char*)&map[recived], size, NULL);
+			recived = recv(client.Connection, &map[ind], left, NULL);
 			left -= recived;
 			ind += recived;
+
+			output("%d left %d map_size\n", left, size);
 		}
-		client.loaded_map = parse_map(map);
+		output("Map was download\n");
+		client.loaded_map = parse_map((wchar_t*)map);
 
 		free(map);
 		// Send message to the widnow to update the map
+		client.log += L"map was loaded\r\n";
+		output("map was loaded\n");
 		SendMessage(client.main_window, WM_SETMAP, 0, 0);
 	}break;
 
