@@ -20,6 +20,7 @@ struct Explosion
 			time = sprite_time;
 		}
 		
+		
 		if (sprite == sprites) 
 			sprite = -1;
 
@@ -62,7 +63,7 @@ void game_loop(Battle_city_window* window)
 	while (runnig)
 	{
 		// if game is start agen
-		Sleep(20);
+		Sleep(100);
 
 		// clear input keys
 		Input::keys_buffer_clear();

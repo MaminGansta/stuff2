@@ -19,6 +19,8 @@ void sendInit(int index)
 
 void sendClose(int index)
 {
+	printf("send close to %d\n", Connections[index]);
+
 	Packet packettype = P_Exit;
 	send(Connections[index], (char*)&packettype, sizeof(Packet), NULL);
 }
@@ -57,14 +59,14 @@ void sendMessage(int index, const std::wstring& msg)
 // Game data
 void sendMap(int index, char* map, int size)
 {
-	printf("send map to %d\n", index);
+	printf("map from %d\n", index);
 
 	for (int i = 0; i < nConnections; i++)
 	{
 		Packet packettype = P_Map;
 		if (i != index)
 		{
-			printf("%d\n", i);
+			printf("send map to %d\n", Connections[i]);
 
 			send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
 			send(Connections[i], (char*)&size, sizeof(int), NULL);
@@ -75,21 +77,25 @@ void sendMap(int index, char* map, int size)
 
 void sendStart(int index)
 {
-	int init_pos_ind = (rand() % 8) ^ 1;
+	//int init_pos_ind = (rand() % 8) ^ 1;
+	int init_pos_ind = 0;
+	Packet packet;
 
 	for (int i = 0; i < nConnections; i++)
 	{
-		Packet packettype = P_InitPosition;
-		send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
+		printf("send init pos to %d\n", Connections[i]);
+		
+		packet = P_InitPosition;
+		send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
 		send(Connections[i], (char*)(init_pos + (2*i) % 8), sizeof(float) * 2, NULL);
 	}
 
 	for (int i = 0; i < nConnections; i++)
 	{
-		if (i != index)
-		{
-			Packet packettype = P_Start;
-			send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
-		}
+		printf("send start msg to %d\n", Connections[i]);
+
+		packet = P_Start;
+		send(Connections[i], (char*)&packet, sizeof(int), NULL);
 	}
+	Sleep(10);
 }

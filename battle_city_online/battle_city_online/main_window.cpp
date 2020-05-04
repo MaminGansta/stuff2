@@ -161,6 +161,8 @@ struct Battle_city_window : Window
 					if (LOWORD(wParam) == window->bLoad_map.id)
 					{
 						window->load_map();
+						window->client.send_map(window->game_map);
+
 						//window->client.send_map(window->game_map);
 					}
 
@@ -193,13 +195,8 @@ struct Battle_city_window : Window
 							break;
 						}
 
-						window->client.send_map(window->game_map);
-
-						window->change_stage(Stage_Game);
+						//window->change_stage(Stage_Game);
 						window->client.start_game();
-
-						window->game_loop_thread =
-							CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)game_loop, LPVOID(window), NULL, NULL);
 					}
 
 					// Client room

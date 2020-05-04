@@ -156,12 +156,15 @@ void send_game_data()
 }
 
 
+
 /*
 	Handle clients messages.
 */
 bool ProccesPacket(int index, Packet packettype)
 {
-	//printf("packettype: %d\n", packettype);
+	// if not game data print this message
+	if (packettype != 10)
+	printf("packettype: %d\n", packettype);
 
 	switch (packettype)
 	{
@@ -207,10 +210,8 @@ bool ProccesPacket(int index, Packet packettype)
 		std::unique_lock<std::shared_mutex> lock(mutex);
 		std::swap(Connections[index], Connections[nConnections]);
 		std::swap(threads[index], threads[nConnections]);
-
-		closesocket(Connections[nConnections]);
-		CloseHandle(threads[nConnections]);
 		nConnections--;
+
 		printf("client disconnect\n");
 	}return false;
 
@@ -223,11 +224,12 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Server_exit:
 	{
-		printf("Server shudown\n");
 		server_running = false;
 		game = false;
 		sendCloseForAll();
 		closesocket(sListener);
+
+		printf("Server shudown\n");
 	}return false;
 
 	/*
@@ -239,8 +241,18 @@ bool ProccesPacket(int index, Packet packettype)
 
 		free(cur_map);
 		char* cur_map = (char*)malloc(map_size);
-		recv(Connections[index], cur_map, map_size, NULL);
-		
+
+	
+		int recived = 0;
+		int left = map_size;
+		int ind = 0;
+		while (recived != map_size)
+		{
+			recived += recv(Connections[index], &cur_map[recived], left, NULL);
+			left -= recived;
+			ind += recived;
+		}
+
 		sendMap(index, cur_map, map_size);
 	}break;
 
@@ -251,7 +263,7 @@ bool ProccesPacket(int index, Packet packettype)
 	{
 		game = true;
 		sendStart(index);
-		printf("Send start to %d", index);
+		//printf("Send start to %d", index);
 		hGame_thread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)send_game_data, NULL, NULL, NULL);
 	}break;
 
@@ -327,6 +339,9 @@ int main(int argc, const char* argv[])
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = inet_addr(argv[0]);
 	server.sin_port = htons(atoi(argv[1]));
+
+	//server.sin_addr.s_addr = inet_addr("192.168.0.104");
+	//server.sin_port = htons(5678);
 
 
 	sListener = socket(AF_INET, SOCK_STREAM, NULL);

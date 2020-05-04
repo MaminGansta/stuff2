@@ -199,6 +199,16 @@ struct Client
 
 bool ProccesPacket(Packet packettype, Client& client)
 {
+	if (packettype != 10)
+	{
+		wchar_t buf[32];
+		output("packet %d\n", packettype);
+
+		swprintf_s(buf, L"packet %d \r\n", packettype);
+		client.log += buf;
+	}
+	SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
+
 	switch (packettype)
 	{
 
@@ -219,6 +229,7 @@ bool ProccesPacket(Packet packettype, Client& client)
 		//client.log += L"Server shutdown\r\n";
 		runnig = false;
 		client_runnig = false;
+		
 		client.Connection = 0;
 	}return false;
 
@@ -230,8 +241,16 @@ bool ProccesPacket(Packet packettype, Client& client)
 		recv(client.Connection, (char*)&size, sizeof(int), NULL);
 
 		wchar_t* map = (wchar_t*)malloc(size);
-		recv(client.Connection, (char*)map, size, NULL);
-		
+
+		int recived = 0;
+		int left = size;
+		int ind = 0;
+		while (recived != size)
+		{
+			recived = recv(client.Connection, (char*)&map[recived], size, NULL);
+			left -= recived;
+			ind += recived;
+		}
 		client.loaded_map = parse_map(map);
 
 		free(map);
