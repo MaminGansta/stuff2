@@ -216,6 +216,7 @@ struct Battle_city_window : Window
 
 				case WM_RBUTTONDOWN:
 				{
+				rbtn_down:
 					if (window->stage == Stage_Map_editor)
 					{
 						int i = 0;
@@ -236,6 +237,7 @@ struct Battle_city_window : Window
 
 				case WM_LBUTTONDOWN:
 				{
+				lbtn_down:
 					if (window->stage == Stage_Map_editor)
 					{
 						if (Mouse::pos_y > 0.95f)
@@ -281,6 +283,16 @@ struct Battle_city_window : Window
 
 				case WM_MOUSEMOVE:
 				{
+					if (Mouse::pressed(WM_LBUTTONDOWN))
+					{
+						goto lbtn_down;
+					}
+
+					if (Mouse::pressed(WM_RBUTTONDOWN))
+					{
+						goto rbtn_down;
+					}
+
 					if (window->stage == Stage_Map_editor)
 						goto redraw;
 				}break;

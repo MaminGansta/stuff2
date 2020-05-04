@@ -59,8 +59,6 @@ void sendMessage(int index, const std::wstring& msg)
 // Game data
 void sendMap(int index, char* map, int size)
 {
-	printf("map from %d\n", index);
-
 	for (int i = 0; i < nConnections; i++)
 	{
 		Packet packettype = P_Map;
@@ -77,8 +75,8 @@ void sendMap(int index, char* map, int size)
 
 void sendStart(int index)
 {
-	//int init_pos_ind = (rand() % 8) ^ 1;
-	int init_pos_ind = 0;
+	srand(time(0));
+	int init_pos_ind = (rand() % 8) ^ 1;
 	Packet packet;
 
 	for (int i = 0; i < nConnections; i++)
@@ -87,12 +85,12 @@ void sendStart(int index)
 		
 		packet = P_InitPosition;
 		send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
-		send(Connections[i], (char*)(init_pos + (2*i) % 8), sizeof(float) * 2, NULL);
+		send(Connections[i], (char*)(init_pos + (2*i + init_pos_ind) % 8), sizeof(float) * 2, NULL);
 	}
 
 	for (int i = 0; i < nConnections; i++)
 	{
-		printf("send start msg to %d\n", Connections[i]);
+		printf("send start to %d\n", Connections[i]);
 
 		packet = P_Start;
 		send(Connections[i], (char*)&packet, sizeof(int), NULL);

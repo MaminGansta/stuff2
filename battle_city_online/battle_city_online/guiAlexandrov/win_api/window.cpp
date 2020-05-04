@@ -343,18 +343,42 @@ struct Window
 				}break;
 
 
+				// Mouse buttons down
 				case WM_RBUTTONDOWN:
+					Mouse::buttons[WM_RBUTTONDOWN - 512] += 1;
+					Mouse::key_was_pressed[WM_RBUTTONDOWN - 512] = true;
+					break;
+
 				case WM_MBUTTONDOWN:
+					Mouse::buttons[WM_MBUTTONDOWN - 512] += 1;
+					Mouse::key_was_pressed[WM_MBUTTONDOWN - 512] = true;
+					break;
+
 				case WM_LBUTTONDOWN:
-				case WM_XBUTTONDOWN:
 					Mouse::buttons[WM_LBUTTONDOWN - 512] += 1;
 					Mouse::key_was_pressed[WM_LBUTTONDOWN - 512] = true;
 					break;
 
-				case WM_LBUTTONUP:
+				case WM_XBUTTONDOWN:
+					Mouse::buttons[WM_XBUTTONDOWN - 512] += 1;
+					Mouse::key_was_pressed[WM_XBUTTONDOWN - 512] = true;
+					break;
+
+
+				// Mouse buttons up
 				case WM_MBUTTONUP:
+					Mouse::buttons[WM_MBUTTONDOWN - 512] = 0;
+					break;
+
 				case WM_RBUTTONUP:
+					Mouse::buttons[WM_RBUTTONDOWN - 512] = 0;
+					break;
+
 				case WM_XBUTTONUP:
+					Mouse::buttons[WM_XBUTTONDOWN - 512] = 0;
+					break;
+
+				case WM_LBUTTONUP:
 					Mouse::buttons[WM_LBUTTONDOWN - 512] = 0;
 					break;
 

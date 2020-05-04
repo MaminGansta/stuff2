@@ -60,7 +60,7 @@ struct Tank
 };
 Tank players[4];
 
-float init_pos[8] = { 0.03f, 0.03f,  0.9f, 0.9f,  0.9f, 0.03f,  0.03f, 0.9f };
+float init_pos[8] = { 0.03f, 0.03f,  0.97f, 0.97f,  0.97f, 0.03f,  0.03f, 0.97f };
 
 int nDestroy = 0;
 int destroy[4];
