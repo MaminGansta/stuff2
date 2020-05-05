@@ -87,7 +87,7 @@ void sendMap(int index, char* map, int size)
 void sendStart()
 {
 	srand(time(0));
-	int init_pos_ind = (rand() % 8) ^ 1;
+	int init_pos_ind = (rand() % 8) & 0x11110;
 	Packet packet;
 
 	printf("init pos ind  %d \n", init_pos_ind);

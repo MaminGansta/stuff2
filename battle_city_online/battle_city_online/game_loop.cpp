@@ -142,7 +142,7 @@ void game_loop(Battle_city_window* window)
 			}
 			bullet_delay -= timer.elapsed;
 
-			// colision detection for tank
+			// colision detection tank and objects
 			bool collided = false;
 
 			for (auto& obj : map)
@@ -156,14 +156,18 @@ void game_loop(Battle_city_window* window)
 				}
 			}
 
+			// colision detection between tanks
 			if (!collided)
 			{
 				for (int i = 0; i < nEnemies; i++)
 				{
-					if (box_collison_detection({ new_x - tank->size * 0.5f , new_y - tank->size * 0.5f }, tank->size,
-						{ enemies[i].pos_x - tank->size * 0.5f , enemies[i].pos_y - tank->size * 0.5f }, tank->size))
+					if (enemies[i].alive)
 					{
-						collided = true;
+						if (box_collison_detection({ new_x - tank->size * 0.5f , new_y - tank->size * 0.5f }, tank->size,
+							{ enemies[i].pos_x - tank->size * 0.5f , enemies[i].pos_y - tank->size * 0.5f }, tank->size))
+						{
+							collided = true;
+						}
 					}
 				}
 			}

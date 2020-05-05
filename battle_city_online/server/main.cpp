@@ -296,7 +296,6 @@ bool ProccesPacket(int index, Packet packettype)
 	{
 		game = true;
 		sendStart();
-		//printf("Send start to %d", index);
 		hGame_thread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)send_game_data, NULL, NULL, NULL);
 	}break;
 
