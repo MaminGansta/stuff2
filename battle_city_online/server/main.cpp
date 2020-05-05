@@ -49,6 +49,7 @@ enum Packet
 
 	P_InitPosition,
 	P_Player,
+	P_Enemies,
 	P_Destroy
 };
 
@@ -140,13 +141,29 @@ void send_game_data()
 	{
 		Sleep(10);
 
+		// Calculate game situations
+
+
+
+
+
+
+		// Send player status
 		Packet packet = P_Player;
 		for (int i = 0; i < nConnections; i++)
 		{
 			send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
+			send(Connections[i], (char*)&players[i], sizeof(Tank), NULL);
+		}
 
-			int players_amount = nConnections - 1;
-			send(Connections[i], (char*)&players_amount, sizeof(int), NULL);
+		// Send Enemy status
+		packet = P_Enemies;
+		for (int i = 0; i < nConnections; i++)
+		{
+			send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
+
+			int enemies_amount = nConnections - 1;
+			send(Connections[i], (char*)&enemies_amount, sizeof(int), NULL);
 
 			for (int j = 0; j < nConnections; j++)
 			{
@@ -155,6 +172,7 @@ void send_game_data()
 			}
 		}
 
+		// Send distoyed objects info
 		packet = P_Destroy;
 		if (nDestroy)
 		{
@@ -228,12 +246,12 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Exit:
 	{
+		printf("client: %d   disconnect\n", Connections[index]);
+
 		std::unique_lock<std::shared_mutex> lock(mutex);
 		std::swap(Connections[index], Connections[nConnections]);
 		std::swap(threads[index], threads[nConnections]);
 		nConnections--;
-
-		printf("client disconnect\n");
 	}return false;
 
 
@@ -289,7 +307,7 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Player:
 	{
-		recv(Connections[index], (char*)&players[index], sizeof(Tank), NULL);
+		recv_s(Connections[index], (char*)&players[index], sizeof(Tank), NULL);
 	}break;
 
 	/*
@@ -325,8 +343,6 @@ void ClientHandler(int index)
 		if (!ProccesPacket(index, packettype))
 			break;
 	}
-
-	printf("client %d disconnected\n", Connections[index]);
 }
 
 
@@ -418,7 +434,5 @@ int main(int argc, const char* argv[])
 	}
 
 	WSACleanup();
-
-	system("pause");
 	return 0;
 }

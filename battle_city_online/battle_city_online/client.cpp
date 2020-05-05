@@ -40,6 +40,7 @@ enum Packet
 	
 	P_InitPosition,
 	P_Player,
+	P_Enemies,
 	P_Destroy
 };
 
@@ -66,9 +67,12 @@ struct Tank
 	bool alive = true;
 };
 
-int nPlayers = 0;
-Tank players[4];
-float init_pos[4];
+
+Tank player;
+float init_pos[2];
+
+int nEnemies = 0;
+Tank enemies[4];
 
 int nDestroy = 0;
 int destroy[10];
@@ -271,12 +275,15 @@ bool ProccesPacket(Packet packettype, Client& client)
 
 	case P_Player:
 	{
-		int size = 0;
-		recv(client.Connection, (char*)&size, sizeof(int), NULL);
+		recv_s(client.Connection, (char*)&player, sizeof(Tank), NULL);
+	}break;
 
-		nPlayers = size;
-		for (int i = 0; i < size; i++)
-			recv(client.Connection, (char*)&players[i], sizeof(Tank), NULL);
+	case P_Enemies:
+	{
+		recv(client.Connection, (char*)&nEnemies, sizeof(int), NULL);
+
+		for (int i = 0; i < nEnemies; i++)
+			recv_s(client.Connection, (char*)&enemies[i], sizeof(Tank), NULL);
 
 	}break;
 

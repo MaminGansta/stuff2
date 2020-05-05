@@ -19,7 +19,7 @@ void sendInit(int index)
 
 void sendClose(int index)
 {
-	printf("Client has been disconected socket: %d\n", Connections[index]);
+	printf("Client has been disconected, socket: %d\n", Connections[index]);
 
 	Packet packettype = P_Exit;
 	send(Connections[index], (char*)&packettype, sizeof(Packet), NULL);

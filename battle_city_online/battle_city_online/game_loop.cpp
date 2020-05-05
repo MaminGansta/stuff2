@@ -158,10 +158,10 @@ void game_loop(Battle_city_window* window)
 
 			if (!collided)
 			{
-				for (int i = 0; i < nPlayers; i++)
+				for (int i = 0; i < nEnemies; i++)
 				{
 					if (box_collison_detection({ new_x - tank->size * 0.5f , new_y - tank->size * 0.5f }, tank->size,
-						{ players[i].pos_x - tank->size * 0.5f , players[i].pos_y - tank->size * 0.5f }, tank->size))
+						{ enemies[i].pos_x - tank->size * 0.5f , enemies[i].pos_y - tank->size * 0.5f }, tank->size))
 					{
 						collided = true;
 					}
@@ -220,10 +220,10 @@ void game_loop(Battle_city_window* window)
 			}
 
 			// Detect if bullet hit tank
-			for (int i = 0; i < nPlayers; i++)
+			for (int i = 0; i < nEnemies; i++)
 			{
 				if (box_collison_detection(vec2{ p.pos_x, p.pos_y }, tank->size,
-					vec2{ players[i].bullet.pos_x, players[i].bullet.pos_y }, bullet.size))
+					vec2{ enemies[i].bullet.pos_x, enemies[i].bullet.pos_y }, bullet.size))
 				{
 					if (p.alive)
 					{
@@ -234,31 +234,31 @@ void game_loop(Battle_city_window* window)
 			}
 
 			// Detect if bullet hit enemy tank
-			for (int i = 0; i < nPlayers; i++)
+			for (int i = 0; i < nEnemies; i++)
 			{
 				if (box_collison_detection(vec2{ p.bullet.pos_x, p.bullet.pos_y }, tank->size,
-					vec2{ players[i].pos_x, players[i].pos_y }, bullet.size))
+					vec2{ enemies[i].pos_x, enemies[i].pos_y }, bullet.size))
 				{
-					if (players[i].alive)
+					if (enemies[i].alive)
 					{
 						p.Score += 100;
-						explosions.push_back(Explosion{ players[i].pos_x, players[i].pos_y, 3 });
+						explosions.push_back(Explosion{ enemies[i].pos_x, enemies[i].pos_y, 3 });
 					}
 				}
 			}
 
 			// Add explosions if tank was distroyed
-			for (int i = 0; i < nPlayers; i++)
+			for (int i = 0; i < nEnemies; i++)
 			{
-				for (int j = 0; j < nPlayers; j++)
+				for (int j = 0; j < nEnemies; j++)
 				{
 					if (i == j) continue;
 
-					if (box_collison_detection(vec2{ players[i].pos_x, players[i].pos_y }, tank->size,
-						vec2{ players[j].bullet.pos_x, players[j].bullet.pos_y }, bullet.size))
+					if (box_collison_detection(vec2{ enemies[i].pos_x, enemies[i].pos_y }, tank->size,
+						vec2{ enemies[j].bullet.pos_x, enemies[j].bullet.pos_y }, bullet.size))
 					{
-						if (players[i].alive)
-							explosions.push_back(Explosion{ players[i].pos_x, players[i].pos_y, 3 });
+						if (enemies[i].alive)
+							explosions.push_back(Explosion{ enemies[i].pos_x, enemies[i].pos_y, 3 });
 					}
 				}
 			}
@@ -286,10 +286,10 @@ void game_loop(Battle_city_window* window)
 
 			// if alive anly one then game will be restarted
 			nAlives = p.alive;
-			for (int i = 0; i < nPlayers; i++)
-				nAlives += players[i].alive;
+			for (int i = 0; i < nEnemies; i++)
+				nAlives += enemies[i].alive;
 
-			if (nPlayers > 0 && nAlives < 2 )
+			if (nEnemies > 0 && nAlives < 2 )
 				break;
 
 
@@ -302,21 +302,21 @@ void game_loop(Battle_city_window* window)
 				draw_image_async_a_rotate(surface, tank[p.sprite], p.pos_x, p.pos_y, tank[0].size, tank[0].size, p.angle);
 
 			// draw enemies
-			for (int i = 0; i < nPlayers; i++)
+			for (int i = 0; i < nEnemies; i++)
 			{
-				if (players[i].alive)
-					draw_image_async_a_rotate(surface, tank[players[i].sprite], players[i].pos_x, players[i].pos_y,
-						tank[0].size, tank[0].size, players[i].angle);
+				if (enemies[i].alive)
+					draw_image_async_a_rotate(surface, tank[enemies[i].sprite], enemies[i].pos_x, enemies[i].pos_y,
+						tank[0].size, tank[0].size, enemies[i].angle);
 			}
 
 			// daraw bullet
 			draw_image_a_rotate(surface, bullet, p.bullet.pos_x, p.bullet.pos_y, bullet.size, bullet.size, p.bullet.angle);
 
 			// draw enemies bullets
-			for (int i = 0; i < nPlayers; i++)
+			for (int i = 0; i < nEnemies; i++)
 			{
-				draw_image_a_rotate(surface, bullet, players[i].bullet.pos_x, players[i].bullet.pos_y,
-					bullet.size, bullet.size, players[i].bullet.angle);
+				draw_image_a_rotate(surface, bullet, enemies[i].bullet.pos_x, enemies[i].bullet.pos_y,
+					bullet.size, bullet.size, enemies[i].bullet.angle);
 			}
 
 			// draw_map
@@ -356,9 +356,9 @@ void game_loop(Battle_city_window* window)
 			{
 				render_text(surface, p.pos_x - 0.05f, p.pos_y + 0.04f, p.name, Color(240, 150, 0), get_def_font(25));
 
-				for (int i = 0; i < nPlayers; i++)
+				for (int i = 0; i < nEnemies; i++)
 				{
-					render_text(surface, players[i].pos_x - 0.05f, players[i].pos_y + 0.04f, players[i].name, Color(240, 150, 0), get_def_font(25));
+					render_text(surface, enemies[i].pos_x - 0.05f, enemies[i].pos_y + 0.04f, enemies[i].name, Color(240, 150, 0), get_def_font(25));
 				}
 			}
 
@@ -370,9 +370,9 @@ void game_loop(Battle_city_window* window)
 			swprintf_s(buffer, L"%d %s", p.Score, p.name);
 			render_text(surface, 0.9f, 0.93f, buffer, Color(240, 200, 0), get_def_font(16));
 
-			for (int i = 0; i < nPlayers; i++)
+			for (int i = 0; i < nEnemies; i++)
 			{
-				swprintf_s(buffer, L"%d %s", players[i].Score, players[i].name);
+				swprintf_s(buffer, L"%d %s", enemies[i].Score, enemies[i].name);
 				render_text(surface, 0.9f, 0.9f - i * 0.03, buffer, Color(240, 200, 0), get_def_font(16));
 			}
 
