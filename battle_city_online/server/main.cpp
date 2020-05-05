@@ -10,6 +10,22 @@
 #include <shared_mutex>
 #include <string>
 
+
+void recv_s(SOCKET sock, char* buf, int size, int flags = 0)
+{
+	int recived = 0;
+	int left = size;
+	int ind = 0;
+	while (left)
+	{
+		recived = recv(sock, &buf[ind], left, flags);
+		left -= recived;
+		ind += recived;
+	}
+}
+
+
+
 #define MAX_CLIENTS 4
 
 
@@ -65,7 +81,7 @@ float init_pos[8] = { 0.03f, 0.03f,  0.97f, 0.97f,  0.97f, 0.03f,  0.03f, 0.97f 
 int nDestroy = 0;
 int destroy[4];
 
-int map_size;
+int map_size = 0;
 char* cur_map = NULL;
 
 // flags
@@ -109,6 +125,8 @@ BOOL WINAPI console_callback(DWORD fdwCtrlType)
 	}
 }
 
+
+// ===================================== Send game data ===============================================
 
 /*
 	When game is start. Begin send info to the players 
@@ -157,6 +175,9 @@ void send_game_data()
 
 
 
+
+
+// ======================================== Client callback ====================================================
 /*
 	Handle clients messages.
 */
@@ -224,9 +245,10 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Server_exit:
 	{
+		sendCloseForAll();
+
 		server_running = false;
 		game = false;
-		sendCloseForAll();
 		closesocket(sListener);
 
 		printf("Server shudown\n");
@@ -240,18 +262,12 @@ bool ProccesPacket(int index, Packet packettype)
 		recv(Connections[index], (char*)&map_size, sizeof(int), NULL);
 
 		free(cur_map);
-		char* cur_map = (char*)malloc(map_size);
+		cur_map = (char*)malloc(map_size);
 
-		int recived = 0;
-		int left = map_size;
-		int ind = 0;
-		while (left)
-		{
-			recived = recv(Connections[index], &cur_map[ind], left, NULL);
-			left -= recived;
-			ind += recived;
-		}
+		// recv map from host
+		recv_s(Connections[index], cur_map, map_size);
 
+		// send map to clients
 		sendMap(index, cur_map, map_size);
 	}break;
 
@@ -261,7 +277,7 @@ bool ProccesPacket(int index, Packet packettype)
 	case P_Start:
 	{
 		game = true;
-		sendStart(index);
+		sendStart();
 		//printf("Send start to %d", index);
 		hGame_thread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)send_game_data, NULL, NULL, NULL);
 	}break;
@@ -289,7 +305,8 @@ bool ProccesPacket(int index, Packet packettype)
 
 	default:
 		printf("unknow packet\n");
-		closesocket(Connections[index]);
+		
+		sendClose(index);
 		return false;
 	}
 	return true;
@@ -311,6 +328,11 @@ void ClientHandler(int index)
 
 	printf("client %d disconnected\n", Connections[index]);
 }
+
+
+
+
+// =========================================== Main =======================================================
 
 
 int main(int argc, const char* argv[])
@@ -396,5 +418,7 @@ int main(int argc, const char* argv[])
 	}
 
 	WSACleanup();
+
+	system("pause");
 	return 0;
 }

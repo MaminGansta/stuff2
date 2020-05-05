@@ -108,19 +108,19 @@ void game_loop(Battle_city_window* window)
 				p.sprite = (p.sprite + 1) & 1;
 				p.angle = PI * 1.5f;
 			}
-			if (Input::pressed(VK_DOWN))
+			else if(Input::pressed(VK_DOWN))
 			{
 				new_y = p.pos_y - p.speed * timer.elapsed;
 				p.sprite = (p.sprite + 1) & 1;
 				p.angle = PI * 0.5f;
 			}
-			if (Input::pressed(VK_RIGHT))
+			else if (Input::pressed(VK_RIGHT))
 			{
 				new_x = p.pos_x + p.speed * timer.elapsed;
 				p.sprite = (p.sprite + 1) & 1;
 				p.angle = 0;
 			}
-			if (Input::pressed(VK_LEFT))
+			else if (Input::pressed(VK_LEFT))
 			{
 				new_x = p.pos_x - p.speed * timer.elapsed;
 				p.sprite = (p.sprite + 1) & 1;

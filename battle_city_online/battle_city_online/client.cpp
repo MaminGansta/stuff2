@@ -5,6 +5,19 @@
 #define WM_UPDATE_LOG (WM_USER + 2)
 
 
+void recv_s(SOCKET sock, char* buf, int size, int flags = 0)
+{
+	int recived = 0;
+	int left = size;
+	int ind = 0;
+	while (left)
+	{
+		recived = recv(sock, &buf[ind], left, flags);
+		left -= recived;
+		ind += recived;
+	}
+}
+
 
 // from Main_window
 enum Packet
@@ -174,7 +187,6 @@ struct Client
 	{
 		Packet packettype_send = P_Server_exit;
 		send(Connection, (char*)&packettype_send, sizeof(Packet), NULL);
-		//Connection = 0;
 	}
 
 	void send_game_data()
@@ -196,6 +208,8 @@ struct Client
 };
 
 
+
+// ============================== Server callback =====================================
 
 bool ProccesPacket(Packet packettype, Client& client)
 {
@@ -226,7 +240,7 @@ bool ProccesPacket(Packet packettype, Client& client)
 
 	case P_Exit:
 	{
-		//client.log += L"Server shutdown\r\n";
+		client.log += L"Server disconect this client \r\n";
 		runnig = false;
 		client_runnig = false;
 		
@@ -239,19 +253,8 @@ bool ProccesPacket(Packet packettype, Client& client)
 		recv(client.Connection, (char*)&size, sizeof(int), NULL);
 
 		char* map = (char*)malloc(size);
+		recv_s(client.Connection, map, size);
 
-		int recived = 0;
-		int left = size;
-		int ind = 0;
-		while (left)
-		{
-			recived = recv(client.Connection, &map[ind], left, NULL);
-			left -= recived;
-			ind += recived;
-
-			output("%d left %d map_size\n", left, size);
-		}
-		output("Map was download\n");
 		client.loaded_map = parse_map((wchar_t*)map);
 
 		free(map);
@@ -314,7 +317,6 @@ void ClientHandler(Client* client)
 
 		if (!ProccesPacket(packettype, *client))
 			break;
-
 	}
 }
 
