@@ -19,6 +19,7 @@ void mat_output(Mat<T>& mat)
 }
 
 
+
 struct pivot { int x, y; };
 
 template <typename T>
@@ -54,10 +55,84 @@ struct Simplex_window : Window
 	Button bPriv;
 	Button bAuto;
 
-	// amount of variables
+	// amount of variables at the start
 	int vars = 0;
 
+
 	Simplex_window(std::vector<T> target, std::vector<T>& basis, Mat<T>& limits, int type)
+	{
+
+		init_window(limits.column + 2);
+
+		// make min if it's max
+		if (type)
+		{
+			for (int i = 0; i < target.size(); i++)
+				target[i] = -target[i];
+		}
+
+		vars = limits.column - 1;
+		
+		// amount of basis variables
+		int amount = 0;
+		for (int i = 0; i < basis.size(); i++)
+			if (basis[i] > 0) amount++;
+
+		if (amount != limits.row)
+			if (!calculate_basis(target, basis, limits))
+				return;
+
+		Simplex_zero_step(target, basis, limits);
+	}
+
+
+	// Transition after artificiant basis
+	Simplex_window(std::vector<T> target, Simplex_step<T> step)
+	{
+		init_window(step.cols());
+		
+		vars = target.size() - 1;
+
+		// now it zero step
+		step.iteration = 0;
+
+		// vars coefs in simplex map
+		for (int i = 1; i < step.cols() - 1; i++)
+		{
+			T sum = target[step[0][i]];
+			for (int j = 1; j < step.rows() - 1; j++)
+			{
+				T coef = -target[step[j][0]];
+				sum += coef * step[j][i];
+			}
+			step[step.rows() - 1][i] = sum;
+		}
+
+		// target value in simplex table
+		T sum = -target[target.size() - 1];
+		for (int i = 1; i < step.rows() - 1; i++)
+			sum += step[i][step.cols() - 1];
+
+		step[step.rows() - 1][step.cols() - 1] = sum;
+
+		mat_output(step.mat);
+
+		find_pivots(step);
+		steps.push_back(step);
+		dump_steps();
+
+		if (step.pivots.size() == 0 && if_result(step))
+		{
+			wchar_t buf[128];
+			result_to_s(buf);
+			MessageBox(getHWND(), buf, L"Решение", MB_OK);
+		}
+	}
+
+
+
+
+	void init_window(int table_cols)
 	{
 		init(L"симплекс метод", 800, 600, [](HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, Args args)->LRESULT
 			{
@@ -101,82 +176,82 @@ struct Simplex_window : Window
 						LPNMLVCUSTOMDRAW  lplvcd = (LPNMLVCUSTOMDRAW)lParam;
 						switch (lplvcd->nmcd.dwDrawStage)
 						{
-							case CDDS_PREPAINT:
-								return CDRF_NOTIFYITEMDRAW;
-								break;
-							case CDDS_ITEMPREPAINT:
-								return CDRF_NOTIFYSUBITEMDRAW;
-								break;
-								//There would be some bits here for subitem drawing but they don't seem neccesary as you seem to want a full row color only
-							case CDDS_SUBITEM | CDDS_ITEMPREPAINT:
+						case CDDS_PREPAINT:
+							return CDRF_NOTIFYITEMDRAW;
+							break;
+						case CDDS_ITEMPREPAINT:
+							return CDRF_NOTIFYSUBITEMDRAW;
+							break;
+							//There would be some bits here for subitem drawing but they don't seem neccesary as you seem to want a full row color only
+						case CDDS_SUBITEM | CDDS_ITEMPREPAINT:
 
-								bool res = false;
-								if (window->steps.back().pivots.size() == 0)
-									res = window->if_result(window->steps.back());
+							bool res = false;
+							if (window->steps.back().pivots.size() == 0)
+								res = window->if_result(window->steps.back());
 
-								int col = lplvcd->iSubItem;
-								int row = lplvcd->nmcd.dwItemSpec;
+							int col = lplvcd->iSubItem;
+							int row = lplvcd->nmcd.dwItemSpec;
 
-								int last_row = window->table.rows();
-								row = row - (last_row - window->steps.back().rows()) + 1;
+							int last_row = window->table.rows();
+							row = row - (last_row - window->steps.back().rows()) + 1;
 
-								bool flag_pivot = false;
-								for (auto& pivot : window->steps.back().pivots)
+							bool flag_pivot = false;
+							for (auto& pivot : window->steps.back().pivots)
+							{
+								if (col == pivot.x && row == pivot.y)
 								{
-									if (col == pivot.x && row == pivot.y)
-									{
-										flag_pivot = true;
-										break;
-									}
+									flag_pivot = true;
+									break;
 								}
+							}
 
-								if (flag_pivot)
+							if (flag_pivot)
+							{
+								lplvcd->clrText = RGB(0, 0, 0);
+								lplvcd->clrTextBk = RGB(150, 255, 150);
+								return CDRF_NEWFONT;
+								break;
+							}
+							else if (window->steps.back().pivots.size() == 0)
+							{
+								if (res)
 								{
 									lplvcd->clrText = RGB(0, 0, 0);
 									lplvcd->clrTextBk = RGB(150, 255, 150);
 									return CDRF_NEWFONT;
-									break;
-								}
-								else if (window->steps.back().pivots.size() == 0)
-								{
-									if (res)
-									{
-										lplvcd->clrText = RGB(0, 0, 0);
-										lplvcd->clrTextBk = RGB(150, 255, 150);
-										return CDRF_NEWFONT;
-									}
-									else
-									{
-										lplvcd->clrText = RGB(0, 0, 0);
-										lplvcd->clrTextBk = RGB(255, 150, 150);
-										return CDRF_NEWFONT;
-									}
 								}
 								else
 								{
 									lplvcd->clrText = RGB(0, 0, 0);
-									lplvcd->clrTextBk = RGB(255, 255, 255);
+									lplvcd->clrTextBk = RGB(255, 150, 150);
 									return CDRF_NEWFONT;
-									break;
 								}
 							}
-						return TRUE;
+							else
+							{
+								lplvcd->clrText = RGB(0, 0, 0);
+								lplvcd->clrTextBk = RGB(255, 255, 255);
+								return CDRF_NEWFONT;
+								break;
+							}
 						}
-					}break;
+						return TRUE;
+					}
+				}break;
 
-					case WM_COMMAND:
-					{
-						if (LOWORD(wParam) == window->bNext.id)
-							window->make_step();
-						else if (LOWORD(wParam) == window->bPriv.id)
-							window->remove_step();
-						else if (LOWORD(wParam) == window->bAuto.id)
-							window->auto_end();
-					}return 0;
-					case WM_CLOSE:
-					{
-						safe_release(window);
-					}return 0;
+				case WM_COMMAND:
+				{
+					if (LOWORD(wParam) == window->bNext.id)
+						window->make_step();
+					else if (LOWORD(wParam) == window->bPriv.id)
+						window->remove_step();
+					else if (LOWORD(wParam) == window->bAuto.id)
+						window->auto_end();
+				}return 0;
+				case WM_CLOSE:
+				{
+					safe_release(window);
+				}return 0;
 				}
 
 				return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -186,37 +261,16 @@ struct Simplex_window : Window
 
 		// gui components
 		table.init(getHWND(), 0, 0, 0, 0.7f, 1.0f, RESIZABLE);
-		table.add_columns(std::vector<std::wstring>(limits.column + 2));
+		table.add_columns(std::vector<std::wstring>(table_cols));
 
 		lPivot.init(getHWND(), L"Опорный", 0, 0.7f, 0.3f, 0.2f, 0.05f, RESIZABLE);
 		set_font_size(lPivot.handle, 25);
 		cPivot.init(getHWND(), 0, 0.7f, 0.35f, 0.15f, 0.05f, RESIZABLE);
 
-		bPriv.init(getHWND(), L"предыдущий", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
+		bPriv.init(getHWND(), L"Предыдущий", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
 		bNext.init(getHWND(), L"Следующий", 101, 0.85f, 0.4f, 0.15f, 0.05f, RESIZABLE);
 		bAuto.init(getHWND(), L"Авто", 102, 0.7f, 0.45f, 0.15f, 0.05f, RESIZABLE);
 
-
-		// make min if it's max
-		if (type)
-		{
-			for (int i = 0; i < target.size(); i++)
-				target[i] = -target[i];
-		}
-
-		vars = limits.column - 1;
-		
-		// amount of basis variables
-		int amount = 0;
-		for (int i = 0; i < basis.size(); i++)
-			if (basis[i] > 0) amount++;
-
-		if (amount != limits.row)
-			if (!calculate_basis(target, basis, limits))
-				return;
-
-
-		Simplex_zero_step(target, basis, limits);
 	}
 
 
@@ -381,12 +435,18 @@ struct Simplex_window : Window
 
 		mat_output(step.mat);
 		
-		
 		find_pivots(step);
-		steps.push_back(step);
 
+		steps.push_back(step);
 		table.clear();
 		dump_steps();
+
+		if (step.pivots.size() == 0 && if_result(step))
+		{
+			wchar_t buf[128];
+			result_to_s(buf);
+			MessageBox(getHWND(), buf, L"Решение", MB_OK);
+		}
 	}
 
 
@@ -472,6 +532,29 @@ struct Simplex_window : Window
 		return res;
 	}
 
+	template <size_t size>
+	void result_to_s(wchar_t (&buf)[size])
+	{
+		Simplex_step<T>& last = steps.back();
+		std::vector<T> vec(vars, T{});
+
+		for (int i = 1; i < last.rows() - 1; i++)
+			vec[last[i][0]] = last[i][last.cols() - 1];
+
+		int index = 0;
+		index += swprintf_s(buf, size, L"X = (");
+
+		for (int i = 0; i < vars; i++)
+		{
+			if (i)
+			index += swprintf_s(buf + index, size - index, L", ");
+
+			index += to_str(buf + index, vec[i]);
+		}
+
+		index += swprintf_s(buf + index, size - index, L")  F = ");
+		to_str(buf + index, -last[last.rows() - 1][last.cols() - 1]);
+	}
 
 	// ==================  if basis is zeroes lets calculate it =======================
 

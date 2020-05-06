@@ -345,8 +345,9 @@ struct Main_window : Window
 		ofn.lpstrFile = file_name;
 		file_name[0] = L'\0';
 		ofn.nMaxFile = 128;
-		ofn.lpstrFilter = L"All Files\0*.*txt\0";
-		ofn.nFilterIndex = 1;
+		ofn.lpstrFilter = L"txt Files(.txt)\0*.txt\0\0";
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+		ofn.nFilterIndex = 0;
 
 		GetOpenFileName(&ofn);
 		if (wcsnlen_s(file_name, 128) == 0)	return;
@@ -549,5 +550,6 @@ struct Main_window : Window
 		wcscat_s(time_buffer, L".txt");
 
 		write_file(time_buffer, buffer, ind);
+		MessageBox(getHWND(), L"задача созранена в файл", NULL, MB_OK);
 	}
 };

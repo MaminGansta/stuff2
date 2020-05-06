@@ -232,27 +232,27 @@ struct Fraction
 // output for float and Fraction
 
 template <typename T>
-void to_str(wchar_t buffer[], T a);
+int to_str(wchar_t buffer[], T a);
 
 template <>
-void to_str<int>(wchar_t buffer[], int a)
+int to_str<int>(wchar_t buffer[], int a)
 {
-	swprintf_s(buffer, 32, L"%d ", a);
+	return swprintf_s(buffer, 32, L"%d ", a);
 }
 
 template <>
-void to_str<float>(wchar_t buffer[], float a)
+int to_str<float>(wchar_t buffer[], float a)
 {
-	swprintf_s(buffer, 32, L"%.1f ", a);
+	return swprintf_s(buffer, 32, L"%.1f ", a);
 }
 
 template <>
-void to_str<Fraction>(wchar_t buffer[], Fraction a)
+int to_str<Fraction>(wchar_t buffer[], Fraction a)
 {
 	if (a.bottom == 1)
-		swprintf_s(buffer, 32, L"%d ", a.top);
+		return swprintf_s(buffer, 32, L"%d ", a.top);
 	else
-		swprintf_s(buffer, 32, L"%d/%d ", a.top, a.bottom);
+		return swprintf_s(buffer, 32, L"%d/%d ", a.top, a.bottom);
 }
 
 

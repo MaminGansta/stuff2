@@ -4,6 +4,7 @@ struct Artificiant_basis_window : Window
 {
 	ListView table;
 	std::vector<Simplex_step<T>> steps;
+	std::vector<T> target;
 
 	Label lPivot;
 	ComboBox cPivot;
@@ -11,6 +12,7 @@ struct Artificiant_basis_window : Window
 	Button bNext;
 	Button bPriv;
 	Button bAuto;
+	Button bSimplex;
 
 	// amount of variables at the start
 	int vars = 0;
@@ -131,6 +133,14 @@ struct Artificiant_basis_window : Window
 					else if (LOWORD(wParam) == window->bAuto.id)
 						window->auto_end();
 
+					if (LOWORD(wParam) == window->bSimplex.id)
+					{
+						Simplex_step<T>& last = window->steps.back();
+
+						if (last.pivots.size() == 0 && window->if_result(last))
+							new Simplex_window(window->target, last);
+					}
+
 				}return 0;
 				case WM_CLOSE:
 				{
@@ -147,21 +157,26 @@ struct Artificiant_basis_window : Window
 		table.init(getHWND(), 0, 0, 0, 0.7f, 1.0f, RESIZABLE);
 		table.add_columns(std::vector<std::wstring>(limits.column + 2));
 
-		lPivot.init(getHWND(), L"Опорный элемент", 0, 0.7f, 0.3f, 0.2f, 0.05f, RESIZABLE);
+		lPivot.init(getHWND(), L"Опорный", 0, 0.7f, 0.3f, 0.2f, 0.05f, RESIZABLE);
 		set_font_size(lPivot.handle, 25);
 		cPivot.init(getHWND(), 0, 0.7f, 0.35f, 0.15f, 0.05f, RESIZABLE);
 
-		bPriv.init(getHWND(), L"предыдущий", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
-		bNext.init(getHWND(), L"Слудующий", 101, 0.85f, 0.4f, 0.15f, 0.05f, RESIZABLE);
+		bPriv.init(getHWND(), L"Предыдущий", 100, 0.7f, 0.4f, 0.15f, 0.05f, RESIZABLE);
+		bNext.init(getHWND(), L"Следующий", 101, 0.85f, 0.4f, 0.15f, 0.05f, RESIZABLE);
 		bAuto.init(getHWND(), L"Авто", 102, 0.7f, 0.45f, 0.15f, 0.05f, RESIZABLE);
+		bSimplex.init(getHWND(), L"Симплекс", 103, 0.85f, 0.45f, 0.15f, 0.05f, RESIZABLE);
 
-
+		
 		// make min if it's max
 		if (type)
 		{
 			for (int i = 0; i < target.size(); i++)
 				target[i] = -target[i];
 		}
+
+		// set target funtion
+		this->target = target;
+
 
 		for (int i = 0; i < basis.size(); i++)
 		{
