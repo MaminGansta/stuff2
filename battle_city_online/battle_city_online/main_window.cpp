@@ -161,9 +161,6 @@ struct Battle_city_window : Window
 					if (LOWORD(wParam) == window->bLoad_map.id)
 					{
 						window->load_map();
-						window->client.send_map(window->game_map);
-
-						//window->client.send_map(window->game_map);
 					}
 
 					if (LOWORD(wParam) == window->bCreate_server.id)
@@ -195,7 +192,7 @@ struct Battle_city_window : Window
 							break;
 						}
 
-						//window->change_stage(Stage_Game);
+						window->client.send_map(window->game_map);
 						window->client.start_game();
 					}
 
@@ -455,7 +452,7 @@ struct Battle_city_window : Window
 		set_font_size(lClient_Ip_port.hwnd, 32);
 
 		tClient_Ip.init(hwnd, 0.15f, 0.8f, 0.3f, 0.1f);
-		tClient_Ip.set_text(L"109.161.95.195");
+		tClient_Ip.set_text(L"192.168.0.104");
 		set_font_size(tClient_Ip.hwnd, 32);
 
 		tClient_Port.init(hwnd, 0.45f, 0.8f, 0.15f, 0.1f);

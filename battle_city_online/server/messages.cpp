@@ -1,7 +1,22 @@
 
 
+// remove connection from array
+void remove_socket(SOCKET sock)
+{
+	int i = 0;
+	for (; i < nConnections; i++)
+		if (Connections[i] == sock) break;
 
-// Connection
+	std::unique_lock<std::shared_mutex> lock(mutex);
+	std::swap(Connections[i], Connections[nConnections - 1]);
+	std::swap(threads[i], threads[nConnections - 1]);
+	nConnections--;
+}
+
+
+
+
+// Connection messages
 
 void sendTest(int index)
 {
@@ -17,28 +32,24 @@ void sendInit(int index)
 }
 
 
-void sendClose(int index)
+void sendClose(SOCKET sock)
 {
-	printf("Client has been disconected, socket: %d\n", Connections[index]);
+	printf("Client has been disconected, socket: %d\n", sock);
 
 	Packet packettype = P_Exit;
-	send(Connections[index], (char*)&packettype, sizeof(Packet), NULL);
-	shutdown(Connections[index], CF_BOTH);
+	send(sock, (char*)&packettype, sizeof(Packet), NULL);
+	shutdown(sock, CF_BOTH);
 
-	// remove from array
-	std::unique_lock<std::shared_mutex> lock(mutex);
-	std::swap(Connections[index], Connections[nConnections-1]);
-	std::swap(threads[index], threads[nConnections-1]);
-	nConnections--;
+	remove_socket(sock);
 }
 
 
 
-void sendCloseForAll(int index)
+void sendCloseForAll(SOCKET sock)
 {
 	for (int i = 0; i < nConnections; i++)
 	{
-		if (i != index)
+		if (Connections[i] != sock)
 		{
 			Packet packettype = P_Exit;
 			send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
@@ -69,13 +80,13 @@ void sendMessage(int index, const std::wstring& msg)
 
 
 
-// Game map
-void sendMap(int index, char* map, int size)
+// Game map message
+void sendMap(SOCKET sock, char* map, int size)
 {
 	for (int i = 0; i < nConnections; i++)
 	{
 		Packet packettype = P_Map;
-		if (i != index)
+		if (Connections[i] != sock)
 		{
 			printf("send map to %d\n", Connections[i]);
 
@@ -113,5 +124,4 @@ void sendStart()
 		packet = P_Start;
 		send(Connections[i], (char*)&packet, sizeof(int), NULL);
 	}
-	Sleep(10);
 }

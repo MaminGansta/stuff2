@@ -358,10 +358,12 @@ void game_loop(Battle_city_window* window)
 
 			if (nickname_timeout > 0.0f)
 			{
+				if (p.alive)
 				render_text(surface, p.pos_x - 0.05f, p.pos_y + 0.04f, p.name, Color(240, 150, 0), get_def_font(25));
 
 				for (int i = 0; i < nEnemies; i++)
 				{
+					if (enemies[i].alive)
 					render_text(surface, enemies[i].pos_x - 0.05f, enemies[i].pos_y + 0.04f, enemies[i].name, Color(240, 150, 0), get_def_font(25));
 				}
 			}
@@ -371,19 +373,13 @@ void game_loop(Battle_city_window* window)
 			render_text(surface, 0.9f, 0.96f, buffer, Color(240, 150, 0), get_def_font(20));
 
 			// Render score
-			if (p.alive)
-			{
-				swprintf_s(buffer, L"%d %s", p.Score, p.name);
-				render_text(surface, 0.9f, 0.93f, buffer, Color(240, 200, 0), get_def_font(16));
-			}
+			swprintf_s(buffer, L"%d %s", p.Score, p.name);
+			render_text(surface, 0.9f, 0.93f, buffer, Color(240, 200, 0), get_def_font(16));
 
 			for (int i = 0; i < nEnemies; i++)
 			{
-				if (enemies[i].alive)
-				{
-					swprintf_s(buffer, L"%d %s", enemies[i].Score, enemies[i].name);
-					render_text(surface, 0.9f, 0.9f - i * 0.03, buffer, Color(240, 200, 0), get_def_font(16));
-				}
+				swprintf_s(buffer, L"%d %s", enemies[i].Score, enemies[i].name);
+				render_text(surface, 0.9f, 0.9f - i * 0.03, buffer, Color(240, 200, 0), get_def_font(16));
 			}
 
 			// Render canvas on the screan

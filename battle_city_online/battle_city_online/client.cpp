@@ -198,6 +198,11 @@ struct Client
 			SendMessage(main_window, WM_UPDATE_LOG, 0, 0);
 		}
 
+		clear();
+	}
+
+	void clear()
+	{
 		Connection = 0;
 		client_runnig = false;
 	}
@@ -268,16 +273,16 @@ struct Client
 
 bool ProccesPacket(Packet packettype, Client& client)
 {
-	if (packettype != 10)
+	if (packettype < 10)
 	{
 		wchar_t buf[32];
 		output("packet %d\n", packettype);
 
 		swprintf_s(buf, L"packet %d \r\n", packettype);
 		client.log += buf;
+		SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
 	}
-	SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
-
+	
 	switch (packettype)
 	{
 
@@ -288,18 +293,24 @@ bool ProccesPacket(Packet packettype, Client& client)
 
 	case P_ChatMessage:
 	{
-		//char msg[128];
-		//recv(client.Connection, msg, sizeof(msg), NULL);
-		//doutput("%s\n", msg);
+		// chat message
 	}break;
 
 	case P_Exit:
 	{
 		client.log += L"Server disconect this client \r\n";
 		runnig = false;
-		client_runnig = false;
-		
-		client.Connection = 0;
+		client.clear();
+		SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
+
+	}return false;
+
+	case P_ServerFull:
+	{
+		client.log += L"Server is full\r\n";
+		client.clear();
+		SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
+
 	}return false;
 
 	case P_Map:
@@ -360,7 +371,6 @@ bool ProccesPacket(Packet packettype, Client& client)
 		return false;
 	}
 
-	SendMessage(client.main_window, WM_UPDATE_LOG, 0, 0);
 	return true;
 }
 

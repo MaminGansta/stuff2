@@ -9,6 +9,7 @@
 #include <atomic>
 #include <shared_mutex>
 #include <string>
+#include <unordered_map>
 
 
 void recv_s(SOCKET sock, char* buf, int size, int flags = 0)
@@ -75,7 +76,8 @@ struct Tank
 	int Score = 0;
 	bool alive = true;
 };
-Tank players[4];
+//Tank players[4];
+std::unordered_map<SOCKET, Tank> players;
 
 float init_pos[8] = { 0.03f, 0.03f,  0.97f, 0.97f,  0.97f, 0.03f,  0.03f, 0.97f };
 
@@ -141,12 +143,15 @@ void send_game_data()
 	{
 		Sleep(10);
 
+		// if add new client (to the array) or disconect client (remove from the array)
+		std::shared_lock<std::shared_mutex> lock(mutex);
+
 		// Send player status
 		Packet packet = P_Player;
 		for (int i = 0; i < nConnections; i++)
 		{
 			send(Connections[i], (char*)&packet, sizeof(Packet), NULL);
-			send(Connections[i], (char*)&players[i], sizeof(Tank), NULL);
+			send(Connections[i], (char*)&players[Connections[i]], sizeof(Tank), NULL);
 		}
 
 		// Send Enemy status
@@ -161,7 +166,7 @@ void send_game_data()
 			for (int j = 0; j < nConnections; j++)
 			{
 				if (i != j)
-					send(Connections[i], (char*)&players[j], sizeof(Tank), NULL);
+				send(Connections[i], (char*)&players[Connections[j]], sizeof(Tank), NULL);
 			}
 		}
 
@@ -192,10 +197,10 @@ void send_game_data()
 /*
 	Handle clients messages.
 */
-bool ProccesPacket(int index, Packet packettype)
+bool ProccesPacket(SOCKET connection, Packet packettype)
 {
 	// if not game data print this message
-	if (packettype != 10)
+	if (packettype < 10)
 	printf("packettype: %d\n", packettype);
 
 	switch (packettype)
@@ -204,33 +209,17 @@ bool ProccesPacket(int index, Packet packettype)
 	// Init connetion
 	case P_InitConnection:
 	{
-
 	}break;
 
 	// Test packet
 	case P_Test:
 	{
-		sendTest(index);
+		sendTest(connection);
 	}
 
 	// Chat message
 	case P_ChatMessage:
 	{
-		char msg[128];
-		recv(Connections[index], msg, sizeof(msg), NULL);
-
-		// if add new client (to the array) or disconect client (remove from the array)
-		std::shared_lock<std::shared_mutex> lock(mutex);
-
-		Packet packettype_send = P_ChatMessage;
-		for (int i = 0; i < nConnections; i++)
-		{
-			if (index != i)
-			{
-				send(Connections[i], (char*)&packettype_send, sizeof(Packet), NULL);
-				send(Connections[i], msg, sizeof(msg), NULL);
-			}
-		}
 	}break;
 
 
@@ -239,12 +228,8 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Exit:
 	{
-		printf("client: %d   disconnect\n", Connections[index]);
-
-		std::unique_lock<std::shared_mutex> lock(mutex);
-		std::swap(Connections[index], Connections[nConnections-1]);
-		std::swap(threads[index], threads[nConnections-1]);
-		nConnections--;
+		printf("client: %d   disconnect\n", connection);
+		remove_socket(connection);
 	}return false;
 
 
@@ -256,7 +241,7 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Server_exit:
 	{
-		sendCloseForAll(index);
+		sendCloseForAll(connection);
 
 		server_running = false;
 		game = false;
@@ -270,16 +255,16 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Map:
 	{
-		recv(Connections[index], (char*)&map_size, sizeof(int), NULL);
+		recv(connection, (char*)&map_size, sizeof(int), NULL);
 
 		free(cur_map);
 		cur_map = (char*)malloc(map_size);
 
 		// recv map from host
-		recv_s(Connections[index], cur_map, map_size);
+		recv_s(connection, cur_map, map_size);
 
 		// send map to clients
-		sendMap(index, cur_map, map_size);
+		sendMap(connection, cur_map, map_size);
 	}break;
 
 	/*
@@ -299,7 +284,7 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Player:
 	{
-		recv_s(Connections[index], (char*)&players[index], sizeof(Tank), NULL);
+		recv_s(connection, (char*)&players[connection], sizeof(Tank), NULL);
 	}break;
 
 	/*
@@ -309,14 +294,14 @@ bool ProccesPacket(int index, Packet packettype)
 	case P_Destroy:
 	{
 		int id;
-		recv(Connections[index], (char*)&id, sizeof(int), NULL);
+		recv(connection, (char*)&id, sizeof(int), NULL);
 		destroy[nDestroy++] = id;
 	}break;
 
 	default:
 		printf("unknow packet\n");
 		
-		sendClose(index);
+		sendClose(connection);
 		return false;
 	}
 	return true;
@@ -325,14 +310,14 @@ bool ProccesPacket(int index, Packet packettype)
 /*
 	Start in separe thread. And recv Clients messages
 */
-void ClientHandler(int index)
+void ClientHandler(SOCKET connection)
 {
 	Packet packettype;
 	while (server_running)
 	{
-		recv(Connections[index], (char*)&packettype, sizeof(Packet), NULL);
+		recv(connection, (char*)&packettype, sizeof(Packet), NULL);
 
-		if (!ProccesPacket(index, packettype))
+		if (!ProccesPacket(connection, packettype))
 			break;
 	}
 }
@@ -369,10 +354,7 @@ int main(int argc, const char* argv[])
 	server.sin_addr.s_addr = inet_addr(argv[0]);
 	server.sin_port = htons(atoi(argv[1]));
 
-	//server.sin_addr.s_addr = inet_addr("192.168.0.104");
-	//server.sin_port = htons(5678);
-
-
+	
 	sListener = socket(AF_INET, SOCK_STREAM, NULL);
 	bind(sListener, (SOCKADDR*)&server, sizeof(server));
 	listen(sListener, SOMAXCONN);
@@ -410,7 +392,7 @@ int main(int argc, const char* argv[])
 		printf("New client connected. Socket %d\n", connection);
 		sendInit(nConnections);
 
-		threads[nConnections] = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)nConnections, NULL, NULL);
+		threads[nConnections] = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)connection, NULL, NULL);
 		nConnections++;
 	}
 
@@ -421,10 +403,11 @@ int main(int argc, const char* argv[])
 	{
 		shutdown(Connections[i], SD_BOTH);
 		closesocket(Connections[i]);
-		TerminateThread(threads[i], 0);
 		CloseHandle(threads[i]);
 	}
 
 	WSACleanup();
+
+	printf("server clean up\n");
 	return 0;
 }
