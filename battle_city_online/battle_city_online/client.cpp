@@ -120,19 +120,70 @@ struct Client
 		client.sin_port = htons(port);
 		client.sin_addr.s_addr = inet_addr(ip_utf8);
 
-
+		// create socket
 		Connection = socket(AF_INET, SOCK_STREAM, NULL);
-		if (connect(Connection, (SOCKADDR*)&client, sizeof(client)))
+
+		// set not blocking mod
+		u_long block = 1;
+		if (ioctlsocket(Connection, FIONBIO, &block) == SOCKET_ERROR)
 		{
-			log += L"connection failled\r\n";
+			closesocket(Connection);
 			return;
 		}
-		log += L"Connection seccess\r\n";
+
+		if (connect(Connection, (struct sockaddr*)&client, sizeof(client)) == SOCKET_ERROR)
+		{
+			// connection pending
+			fd_set setW, setE;
+
+			FD_ZERO(&setW);
+			FD_SET(Connection, &setW);
+			FD_ZERO(&setE);
+			FD_SET(Connection, &setE);
+
+			timeval time_out = { 0 };
+			time_out.tv_sec = 2;
+			time_out.tv_usec = 0;
+
+			int ret = select(0, NULL, &setW, &setE, &time_out);
+			if (ret <= 0)
+			{
+				// select() failed or connection timed out
+				log += L"Connection filed\r\n";
+				SendMessage(main_window, WM_UPDATE_LOG, 0, 0);
+
+				closesocket(Connection);
+				if (ret == 0)
+					WSASetLastError(WSAETIMEDOUT);
+				return;
+			}
+
+			if (FD_ISSET(Connection, &setE))
+			{
+				// connection failed
+				int err = 0;
+				//getsockopt(Connection, SOL_SOCKET, SO_ERROR, &err, sizeof(err));
+				closesocket(Connection);
+				WSASetLastError(err);
+				return;
+			}
+		}
+
+		// connection successful
+		// put socked in blocking mode...
+		block = 0;
+		if (ioctlsocket(Connection, FIONBIO, &block) == SOCKET_ERROR)
+		{
+			closesocket(Connection);
+			return;
+		}
+
 
 		client_runnig = true;
 		// create thread with receive msg hadnler
 		server_callback = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)this, NULL, NULL);
-
+		
+		log += L"Connection success\r\n";
 		SendMessage(main_window, WM_UPDATE_LOG, 0, 0);
 	}
 
