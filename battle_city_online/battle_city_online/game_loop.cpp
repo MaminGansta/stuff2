@@ -371,13 +371,19 @@ void game_loop(Battle_city_window* window)
 			render_text(surface, 0.9f, 0.96f, buffer, Color(240, 150, 0), get_def_font(20));
 
 			// Render score
-			swprintf_s(buffer, L"%d %s", p.Score, p.name);
-			render_text(surface, 0.9f, 0.93f, buffer, Color(240, 200, 0), get_def_font(16));
+			if (p.alive)
+			{
+				swprintf_s(buffer, L"%d %s", p.Score, p.name);
+				render_text(surface, 0.9f, 0.93f, buffer, Color(240, 200, 0), get_def_font(16));
+			}
 
 			for (int i = 0; i < nEnemies; i++)
 			{
-				swprintf_s(buffer, L"%d %s", enemies[i].Score, enemies[i].name);
-				render_text(surface, 0.9f, 0.9f - i * 0.03, buffer, Color(240, 200, 0), get_def_font(16));
+				if (enemies[i].alive)
+				{
+					swprintf_s(buffer, L"%d %s", enemies[i].Score, enemies[i].name);
+					render_text(surface, 0.9f, 0.9f - i * 0.03, buffer, Color(240, 200, 0), get_def_font(16));
+				}
 			}
 
 			// Render canvas on the screan

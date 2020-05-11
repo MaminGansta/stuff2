@@ -27,19 +27,22 @@ void sendClose(int index)
 
 	// remove from array
 	std::unique_lock<std::shared_mutex> lock(mutex);
-	std::swap(Connections[index], Connections[nConnections]);
-	std::swap(threads[index], threads[nConnections]);
+	std::swap(Connections[index], Connections[nConnections-1]);
+	std::swap(threads[index], threads[nConnections-1]);
 	nConnections--;
 }
 
 
 
-void sendCloseForAll()
+void sendCloseForAll(int index)
 {
 	for (int i = 0; i < nConnections; i++)
 	{
-		Packet packettype = P_Exit;
-		send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
+		if (i != index)
+		{
+			Packet packettype = P_Exit;
+			send(Connections[i], (char*)&packettype, sizeof(Packet), NULL);
+		}
 	}
 }
 

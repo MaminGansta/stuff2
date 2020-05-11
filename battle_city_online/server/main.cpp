@@ -115,7 +115,7 @@ BOOL WINAPI console_callback(DWORD fdwCtrlType)
 	{
 		// if console was closed
 	case CTRL_CLOSE_EVENT:
-		sendCloseForAll();
+		sendCloseForAll(100);
 		server_running = true;
 		game = false;
 		closesocket(sListener);
@@ -140,13 +140,6 @@ void send_game_data()
 	while (game)
 	{
 		Sleep(10);
-
-		// Calculate game situations
-
-
-
-
-
 
 		// Send player status
 		Packet packet = P_Player;
@@ -249,8 +242,8 @@ bool ProccesPacket(int index, Packet packettype)
 		printf("client: %d   disconnect\n", Connections[index]);
 
 		std::unique_lock<std::shared_mutex> lock(mutex);
-		std::swap(Connections[index], Connections[nConnections]);
-		std::swap(threads[index], threads[nConnections]);
+		std::swap(Connections[index], Connections[nConnections-1]);
+		std::swap(threads[index], threads[nConnections-1]);
 		nConnections--;
 	}return false;
 
@@ -263,7 +256,7 @@ bool ProccesPacket(int index, Packet packettype)
 	*/
 	case P_Server_exit:
 	{
-		sendCloseForAll();
+		sendCloseForAll(index);
 
 		server_running = false;
 		game = false;

@@ -358,12 +358,14 @@ struct Battle_city_window : Window
 				case WM_CLOSE:
 				{
 					wm_close = true;
+					runnig = false;
+					client_runnig = false;
+
 					if (window->server.runnig())
 						window->client.send_server_close();
 					else
 						window->client.Disconnect();
 
-					runnig = false;
 					WaitForSingleObject(window->game_loop_thread, INFINITE);
 				}break;
 
