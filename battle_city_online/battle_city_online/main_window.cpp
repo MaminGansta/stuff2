@@ -603,7 +603,7 @@ struct Battle_city_window : Window
 		explosion[2].size = 0.1f;
 
 		bullet.open(L"sprites/bullet.png");
-		bullet.size = 0.02f;
+		bullet.size = 0.01f;
 	}
 
 

@@ -108,8 +108,6 @@ HINSTANCE hInst;
 #include "libs/thread_pool.cpp"
 thread_pool workers(MAX_THREADS);
 
-#include "libs/sin_cos_fast.cpp"
-
 // gui layout
 #include "image/color.cpp"
 #include "image/canvas.cpp"
@@ -139,5 +137,4 @@ void al_init(HINSTANCE hInstance)
 {
 	hInst = hInstance;
 	init_time = high_resolution_clock::now();
-	buld_lookup_tables();
 }

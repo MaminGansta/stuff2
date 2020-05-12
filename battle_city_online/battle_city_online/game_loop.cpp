@@ -132,8 +132,8 @@ void game_loop(Battle_city_window* window)
 				if (p.alive && p.bullet.pos_x == -1.0f && p.bullet.pos_y == -1.0f && bullet_delay < 0.0f)
 				{
 					p.bullet.angle = p.angle;
-					p.bullet.speed_x = fastcos(p.angle) * p.bullet.speed;
-					p.bullet.speed_y = -fastsin(p.angle) * p.bullet.speed;
+					p.bullet.speed_x = cosf(p.angle) * p.bullet.speed;
+					p.bullet.speed_y = -sinf(p.angle) * p.bullet.speed;
 
 					p.bullet.pos_x = p.pos_x;
 					p.bullet.pos_y = p.pos_y;

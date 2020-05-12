@@ -156,13 +156,14 @@ void draw_filled_rect_async(Image_type& surface, float fx, float fy, float fwidt
 
 	for (int i = 0; i < workers.size; i++)
 	{
-		int from_x = x0 + (i)*width / workers.size;
-		int to_x = x0 + (i + 1) * width / workers.size;
+		int from_y = i * height / workers.size;
+		int to_y = (i + 1) * height / workers.size;
 
-		res[i] = workers.add_task([y0, height, from_x, to_x, &surface, &color]() {
-			for (int y = y0; y < y0 + height; y++)
-				for (int x = from_x; x < to_x; x++)
-					drawPixel(surface, x, y, color);
+		res[i] = workers.add_task([from_y, to_y, height, width, &surface, &color]()
+			{
+				for (int y = from_y; y < to_y; y++)
+					for (int x = 0; x < width; x++)
+						drawPixel(surface, x, y, color);
 			});
 	}
 
@@ -213,13 +214,13 @@ void draw_image_async(Surface_type& surface, const Image_type& image,
 
 	for (int i = 0; i < workers.size; i++)
 	{
-		int from_x = i * width / workers.size;
-		int to_x = (i + 1) * width / workers.size;
+		int from_y = i * height / workers.size;
+		int to_y = (i + 1) * height / workers.size;
 
-		res[i] = workers.add_task([from_x, to_x, pos_y, pos_x, height, width, &surface, &image]()
+		res[i] = workers.add_task([from_y, to_y, pos_y, pos_x, height, width, &surface, &image]()
 			{
-				for (int y = 0; y < height; y++)
-					for (int x = from_x; x < to_x; x++)
+				for (int y = from_y; y < to_y; y++)
+					for (int x = 0; x < width; x++)
 					{
 						Color color = image.get_pixel_scaled(x, y, width, height);
 						drawPixel(surface, x + pos_x, y + pos_y, color);
@@ -248,13 +249,13 @@ void draw_image_async_direct(Surface_type& surface, const Image_type& image,
 
 	for (int i = 0; i < workers.size; i++)
 	{
-		int from_x = i * width / workers.size;
-		int to_x = (i + 1) * width / workers.size;
+		int from_y = i * height / workers.size;
+		int to_y = (i + 1) * height / workers.size;
 
-		res[i] = workers.add_task([from_x, to_x, pos_y, pos_x, height, width, &surface, &image]()
+		res[i] = workers.add_task([from_y, to_y, pos_y, pos_x, height, width, &surface, &image]()
 			{
-				for (int y = 0; y < height; y++)
-					for (int x = from_x; x < to_x; x++)
+				for (int y = from_y; y < to_y; y++)
+					for (int x = 0; x < width; x++)
 					{
 						assert(x < surface.width);
 						Color color = image.get_pixel_scaled(x, y, width, height);
@@ -432,12 +433,12 @@ void draw_filled_rect_async_a(Image_type& surface, float fx, float fy, float fwi
 
 	for (int i = 0; i < workers.size; i++)
 	{
-		int from_x = x0 + (i)*width / workers.size;
-		int to_x = x0 + (i + 1) * width / workers.size;
+		int from_y = y0 + (i)* height / workers.size;
+		int to_y = y0 + (i + 1) * height / workers.size;
 
-		res[i] = workers.add_task([y0, height, from_x, to_x, &surface, &color]() {
-			for (int y = y0; y < y0 + height; y++)
-				for (int x = from_x; x < to_x; x++)
+		res[i] = workers.add_task([x0, height, width, from_y, to_y, &surface, &color]() {
+			for (int y = from_y; y < to_y; y++)
+				for (int x = x0; x < width + x0; x++)
 					drawPixel_a(surface, x, y, color);
 			});
 	}
@@ -490,17 +491,19 @@ void draw_image_async_a(Surface_type& surface, const Image_type& image,
 
 	for (int i = 0; i < workers.size; i++)
 	{
-		int from_x = i * width / workers.size;
-		int to_x = (i + 1) * width / workers.size;
+		int from_y = i * height / workers.size;
+		int to_y = (i + 1) * height / workers.size;
 
-		res[i] = workers.add_task([from_x, to_x, pos_y, pos_x, height, width, &surface, &image]()
+		res[i] = workers.add_task([from_y, to_y, pos_y, pos_x, height, width, &surface, &image]()
 			{
-				for (int y = 0; y < height; y++)
-					for (int x = from_x; x < to_x; x++)
+				for (int y = from_y; y < to_y; y++)
+				{
+					for (int x = 0; x < width; x++)
 					{
 						fColor color = image.get_pixel_scaled(x, y, width, height);
 						drawPixel_a(surface, x + pos_x, y + pos_y, color);
 					}
+				}
 			});
 	}
 
@@ -547,11 +550,11 @@ void draw_image_async_a(Surface_type& surface, const Image_type& image,
 	int height = surface.height * fheight;
 
 
-	ASYNC_FOR(0, width)
+	ASYNC_FOR(0, height)
 		[alpha, from, to, pos_y, pos_x, height, width, &surface, &image]()
 		{
-				for (int y = 0; y < height; y++)
-					for (int x = from; x < to; x++)
+				for (int y = from; y < to; y++)
+					for (int x = 0; x < width; x++)
 					{
 						fColor color = image.get_pixel_scaled(x, y, width, height);
 						color.a = alpha;
@@ -584,8 +587,8 @@ void draw_image_a_rotate(Surface_type& surface, const Image_type& image,
 	{
 		for (int x = 0; x < width; x++)
 		{
-			int rotate_x = fastcos(angle) * (x - center_x) + fastsin(angle) * (y - center_y);
-			int rotate_y = -fastsin(angle) * (x - center_x) + fastcos(angle) * (y - center_y);
+			int rotate_x = cosf(angle) * (x - center_x) + sinf(angle) * (y - center_y);
+			int rotate_y = -sinf(angle) * (x - center_x) + cosf(angle) * (y - center_y);
 
 			fColor color = image.get_pixel_scaled(x, y, width, height);
 			drawPixel_a(surface, rotate_x + pos_x, rotate_y + pos_y, color);
@@ -609,19 +612,19 @@ void draw_image_async_a_rotate(Surface_type& surface, const Image_type& image,
 	int center_y = height / 2;
 
 
-	ASYNC_FOR(0, width)
+	ASYNC_FOR(0, height)
 		[from, to, pos_y, pos_x, height, width, center_x, center_y, angle, &surface, &image]()
-	{
-		for (int y = 0; y < height; y++)
-			for (int x = from; x < to; x++)
-			{
-				int rotate_x = fastcos(angle) * (x - center_x) + fastsin(angle) * (y - center_y);
-				int rotate_y = -fastsin(angle) * (x - center_x) + fastcos(angle) * (y - center_y);
+		{
+			for (int y = from; y < to; y++)
+				for (int x = 0; x < width; x++)
+				{
+					int rotate_x = cosf(angle) * (x - center_x) + sinf(angle) * (y - center_y);
+					int rotate_y = -sinf(angle) * (x - center_x) + cosf(angle) * (y - center_y);
 
-				fColor color = image.get_pixel_scaled(x, y, width, height);
-				drawPixel_a(surface, rotate_x + pos_x, rotate_y + pos_y, color);
-			}
-	}
-		END_FOR
+					fColor color = image.get_pixel_scaled(x, y, width, height);
+					drawPixel_a(surface, rotate_x + pos_x, rotate_y + pos_y, color);
+				}
+		}
+	END_FOR
 
 }
