@@ -32,7 +32,7 @@ std::tuple<cl::Program, cl::Context, cl::Device, cl_int> CreateProgram(const std
 			device = devices[i];
 	}
 
-	// if vendor not founded
+	// if vendor was not found
 	if (!device.getInfo<CL_DEVICE_AVAILABLE>())
 		return { cl::Program(), cl::Context(), cl::Device(), -200 };
 

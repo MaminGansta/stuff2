@@ -25,4 +25,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="proccess_array.cl" />
+  </ItemGroup>
 </Project>
