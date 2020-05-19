@@ -111,7 +111,7 @@ struct Simplex_window : Window
 		// target value in simplex table
 		T sum = -target[target.size() - 1];
 		for (int i = 1; i < step.rows() - 1; i++)
-			sum += step[i][step.cols() - 1];
+			sum -= step[i][step.cols() - 1] * target[step[i][0]];
 
 		step[step.rows() - 1][step.cols() - 1] = sum;
 
@@ -409,7 +409,7 @@ struct Simplex_window : Window
 		std::swap(step[0][coord.x], step[coord.y][0]);
 
 		// flip the pivot
-		step[coord.y][coord.x] = 1 / step[coord.y][coord.x];
+		step[coord.y][coord.x] = T(1) / step[coord.y][coord.x];
 
 		// divide by pivot
 		for (int i = 1; i < step.cols(); i++)

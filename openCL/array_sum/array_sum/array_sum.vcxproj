@@ -173,6 +173,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="array_sum.cl" />
     <None Include="proccess_array.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -27,5 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="proccess_array.cl" />
+    <None Include="array_sum.cl" />
   </ItemGroup>
 </Project>

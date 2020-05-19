@@ -53,5 +53,14 @@ std::tuple<cl::Program, cl::Context, cl::Device, cl_int> CreateProgram(const std
 	// build
 	auto error = program.build("-cl-std=CL1.2");
 
+	cl_build_status status = program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(device);
+	if (status == CL_BUILD_ERROR)
+	{
+		// Get the build log
+		std::string name = device.getInfo<CL_DEVICE_NAME>();
+		std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+		printf("Build log for %s :\n %s", name.c_str(), buildlog.c_str());
+	}
+
 	return { program, context, device, error };
 }

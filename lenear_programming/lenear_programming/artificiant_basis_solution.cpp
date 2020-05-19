@@ -297,7 +297,7 @@ struct Artificiant_basis_window : Window
 		std::swap(step[0][coord.x], step[coord.y][0]);
 
 		// flip the pivot
-		step[coord.y][coord.x] = 1 / step[coord.y][coord.x];
+		step[coord.y][coord.x] = T(1) / step[coord.y][coord.x];
 
 		// divide by pivot
 		for (int i = 1; i < step.cols(); i++)
