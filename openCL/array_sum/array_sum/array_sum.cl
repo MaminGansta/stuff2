@@ -1,7 +1,5 @@
 
 
-#define VALUES_PER_ITEM 64
-
 //__kernel void ArraySum(__global int* data, __global int* res)
 //{
 //	int localId = get_local_id(0);
@@ -21,16 +19,16 @@
 //}
 
 
-__kernel void ArraySum(__global int* data, __global int* res)
+__kernel void ArraySum(	__global int* values_per_item,
+						__global int* data, 
+						__global int* res)
 {
 	int id = get_global_id(0);
 
-	//printf("global id %d \n", id);
-
 	int sum = 0;
-	for (int i = 0; i < VALUES_PER_ITEM; i++)
+	for (int i = 0; i < *values_per_item; i++)
 	{
-		sum += data[id * VALUES_PER_ITEM + i];
+		sum += data[id * *(values_per_item) + i];
 	}
 
 	atomic_add(res, sum);

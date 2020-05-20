@@ -5,6 +5,7 @@ struct Artificiant_basis_window : Window
 	ListView table;
 	std::vector<Simplex_step<T>> steps;
 	std::vector<T> target;
+	int type = 0;
 
 	Label lPivot;
 	ComboBox cPivot;
@@ -138,7 +139,7 @@ struct Artificiant_basis_window : Window
 						Simplex_step<T>& last = window->steps.back();
 
 						if (last.pivots.size() == 0 && window->if_result(last))
-							new Simplex_window(window->target, last);
+							new Simplex_window(window->target, last, window->type);
 					}
 
 				}return 0;
@@ -167,6 +168,9 @@ struct Artificiant_basis_window : Window
 		bSimplex.init(getHWND(), L"Симплекс", 103, 0.85f, 0.45f, 0.15f, 0.05f, RESIZABLE);
 
 		
+		// set type
+		this->type = type;
+
 		// make min if it's max
 		if (type)
 		{

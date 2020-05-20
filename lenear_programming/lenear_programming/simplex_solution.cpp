@@ -55,6 +55,9 @@ struct Simplex_window : Window
 	Button bPriv;
 	Button bAuto;
 
+	// problem type 0 - min, 1 - max
+	int type = 0;
+
 	// amount of variables at the start
 	int vars = 0;
 
@@ -70,6 +73,9 @@ struct Simplex_window : Window
 			for (int i = 0; i < target.size(); i++)
 				target[i] = -target[i];
 		}
+
+		// set type
+		this->type = type;
 
 		vars = limits.column - 1;
 		
@@ -87,7 +93,7 @@ struct Simplex_window : Window
 
 
 	// Transition after artificiant basis
-	Simplex_window(std::vector<T> target, Simplex_step<T> step)
+	Simplex_window(std::vector<T> target, Simplex_step<T> step, int type)
 	{
 		init_window(step.cols());
 		
@@ -95,6 +101,9 @@ struct Simplex_window : Window
 
 		// now it zero step
 		step.iteration = 0;
+
+		// set type
+		this->type = type;
 
 		// vars coefs in simplex map
 		for (int i = 1; i < step.cols() - 1; i++)
@@ -109,11 +118,11 @@ struct Simplex_window : Window
 		}
 
 		// target value in simplex table
-		T sum = -target[target.size() - 1];
+		T sum = target[target.size() - 1];
 		for (int i = 1; i < step.rows() - 1; i++)
-			sum -= step[i][step.cols() - 1] * target[step[i][0]];
+			sum += step[i][step.cols() - 1] * target[step[i][0]];
 
-		step[step.rows() - 1][step.cols() - 1] = sum;
+		step[step.rows() - 1][step.cols() - 1] = -sum;
 
 		mat_output(step.mat);
 
@@ -526,7 +535,7 @@ struct Simplex_window : Window
 	bool if_result(Simplex_step<T>& step)
 	{
 		bool res = true;
-		for (int i = 1; i < step.cols(); i++)
+		for (int i = 1; i < step.cols() - 1; i++)
 			if (step[step.rows() - 1][i] < 0)
 				res = false;
 		return res;
@@ -552,8 +561,10 @@ struct Simplex_window : Window
 			index += to_str(buf + index, vec[i]);
 		}
 
+
+		int sign = type ? 1 : -1;
 		index += swprintf_s(buf + index, size - index, L")  F = ");
-		to_str(buf + index, -last[last.rows() - 1][last.cols() - 1]);
+		to_str(buf + index, last[last.rows() - 1][last.cols() - 1] * sign);
 	}
 
 	// ==================  if basis is zeroes lets calculate it =======================
