@@ -1,5 +1,12 @@
 
 
+void doutput(const char* format)
+{
+#if _DEBUG
+	OutputDebugStringA(format);
+#endif
+}
+
 template <size_t buffer_size = 128>
 void doutput(const char* format, ...)
 {
@@ -24,6 +31,15 @@ void doutput(const wchar_t* format, ...)
 	OutputDebugStringW(log);
 	va_end(args);
 #endif
+}
+
+
+
+
+
+void output(const char* format)
+{
+	OutputDebugStringA(format);
 }
 
 template <size_t buffer_size = 128>

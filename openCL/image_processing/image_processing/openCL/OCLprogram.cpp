@@ -59,7 +59,9 @@ std::tuple<cl::Program, cl::Context, cl::Device, cl_int> CreateProgram(const std
 		// Get the build log
 		std::string name = device.getInfo<CL_DEVICE_NAME>();
 		std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
-		output<512>("Build log for %s :\n %s", name.c_str(), buildlog.c_str());
+
+		output(name.c_str()); 
+		output(buildlog.c_str());
 	}
 
 	return { program, context, device, error };
