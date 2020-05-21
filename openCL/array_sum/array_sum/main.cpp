@@ -28,7 +28,7 @@ int main(void)
 
 
 	// 1 million additions
-	std::vector<int> data(1024 * 1024, 1);
+	std::vector<int> data(1024 * 1024 * 32, 1);
 
 	// cpu
 	volatile int cpu_sum = 0;
@@ -48,9 +48,9 @@ int main(void)
 	// gpu
 	cl::Kernel kernel(program, "ArraySum", &error);
 
-	//uint32_t work_group_size = kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(device);
 	int nValues_per_item = 64;
-	uint32_t work_group_size = 64;
+	uint32_t work_group_size = kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(device);
+
 	uint32_t num_work_groups = data.size() / work_group_size;
 	uint32_t NDRange = data.size() / nValues_per_item;
 
