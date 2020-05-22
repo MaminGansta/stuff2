@@ -26,7 +26,7 @@ std::tuple<cl::Program, cl::Context, cl::Device, cl_int> CreateProgram(const std
 	cl::Device device;
 	for (int i = 0; i < devices.size(); i++)
 	{
-		const cl::STRING_CLASS& vndr = devices[i].getInfo<CL_DEVICE_VENDOR>();
+		const cl::string& vndr = devices[i].getInfo<CL_DEVICE_VENDOR>();
 		
 		if (vndr._Equal(vendor))
 			device = devices[i];
@@ -44,7 +44,7 @@ std::tuple<cl::Program, cl::Context, cl::Device, cl_int> CreateProgram(const std
 	// make source string 
 	std::string src(std::istreambuf_iterator<char>(ProgramFile), (std::istreambuf_iterator<char>()));
 	
-	cl::Program::Sources sources(1, std::make_pair(src.c_str(), src.length() + 1));
+	cl::Program::Sources sources = { src };
 
 
 	cl::Context context(device);

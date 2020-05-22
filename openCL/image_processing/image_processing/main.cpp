@@ -36,8 +36,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE no, LPSTR args, int cmdShow)
 	Color rect_color(255, 0, 0);
 	
 	// allocate image buffer on gpu
-	cl::Buffer image(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(Color) * window->canvas.capacity, NULL, &error);
+	//cl::Buffer image(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(Color) * window->canvas.capacity, NULL, &error);
+	cl::Image2D image(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, cl::ImageFormat(CL_BGRA, CL_UNSIGNED_INT8), 1920, 1080, 0, nullptr, &error);
 
+	
 	// Create command queue
 	cl::CommandQueue queue(context, device);
 
@@ -48,12 +50,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE no, LPSTR args, int cmdShow)
 		return 1;
 	}
 
-	Timer timer(0.0f);
+
+
+	float fps_deley = 0.0f;
+	Timer timer;
 	while (Window::windows.size())
 	{
+
 		// set args
 		error = kernel.setArg(0, image);
-
 		error = kernel.setArg(1, x);
 		error = kernel.setArg(2, y);
 		error = kernel.setArg(3, window->canvas.width);
@@ -64,12 +69,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE no, LPSTR args, int cmdShow)
 		// draw red rect
 		error = queue.enqueueNDRangeKernel( kernel, cl::NullRange, 
 											cl::NDRange(window->canvas.width, window->canvas.height),
-											cl::NDRange(16, 16));
+											cl::NDRange(256, 1));
 
-		error = queue.enqueueReadBuffer(image, GL_TRUE, 0, sizeof(Color) * window->canvas.whole_size, window->canvas.data);
+		//error = queue.enqueueReadBuffer(image, GL_TRUE, 0, sizeof(Color) * window->canvas.whole_size, window->canvas.data);
+		error = queue.enqueueReadImage(image, true,
+									   { 0, 0, 0 },
+									   { (uint32_t)window->canvas.width , (uint32_t)window->canvas.height, 1 },
+									   window->canvas.width * sizeof(Color),
+									   0,
+									   window->canvas.data);
 
+		//draw_filled_rect_async(window->canvas, 0, 0, 1.0f, 1.0f, Color(255, 0, 0));
 
-		output("fps %d\n", timer.FPS);
+		if ((fps_deley -= timer.elapsed) < 0.0f)
+		{
+			output("fps %d\n", timer.FPS);
+			fps_deley = 1.0f;
+		}
 
 		timer.update();
 		window->render_canvas();
