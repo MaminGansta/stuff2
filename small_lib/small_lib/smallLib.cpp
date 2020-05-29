@@ -1,12 +1,8 @@
-#include <cassert>
-#include <memory.h>
-#include <utility>
-#include <malloc.h>
-#include <stdio.h>
-#include <string>
+
 #include <random>
-#include <limits.h>
 #include <chrono>
+#include <string>
+
 
 #ifndef MAX
 #define MAX(a,b) (a > b? a : b)
@@ -17,7 +13,9 @@ namespace small
 
 	// ============ Arrays ===============
 
-	// stack allocated array
+
+	// ---------------------- static size array ---------------------------
+
 	template <typename T, size_t capacity>
 	struct array
 	{
@@ -40,18 +38,15 @@ namespace small
 			for (size_t i = 0; i < args.size(); i++)
 				push_back(*(args.begin() + i));
 		}
+
+
+		// Copy
 		array(array<T, capacity> const& other)
 		{
 			for (int i = 0; i < other.size; i++)
 				push_back(other.data[i]);
 		}
-		array(array<T, capacity>&& other)
-		{
-			size = other.size;
-			other.size = 0;
-			for (int i = 0; i < size; i++)
-				data[i] = std::move(other.data[i]);
-		}
+
 		array& operator= (array<T, capacity> const& other)
 		{
 			for (int i = 0; i < size; i++)
@@ -62,6 +57,16 @@ namespace small
 				push_back(other.data[i]);
 			return *this;
 		}
+
+		// Move
+		array(array<T, capacity>&& other)
+		{
+			size = other.size;
+			other.size = 0;
+
+			memmove(data, other.data, sizeof(T) * size);
+		}
+
 		array& operator= (array<T, capacity>&& other)
 		{
 			for (int i = 0; i < size; i++)
@@ -69,10 +74,12 @@ namespace small
 
 			size = other.size;
 			other.size = 0;
-			for (int i = 0; i < size; i++)
-				data[i] = std::move(other.data[i]);
+			
+			memmove(data, other.data, sizeof(T) * size);
 			return *this;
 		}
+
+
 		~array()
 		{
 			for (size_t i = 0; i < size; i++)
@@ -80,6 +87,12 @@ namespace small
 		}
 
 		T& operator [] (int idx)
+		{
+			assert((unsigned)idx < size);
+			return data[idx];
+		}
+
+		const T& operator [] (int idx) const
 		{
 			assert((unsigned)idx < size);
 			return data[idx];
@@ -102,7 +115,7 @@ namespace small
 		void erase(int i)
 		{
 			assert((unsigned)i < size);
-			data[size].~T();
+			data[i].~T();
 			memmove(data + i, data + i + 1, sizeof(T) * (size - i));
 			size--;
 		}
@@ -119,19 +132,130 @@ namespace small
 	};
 
 
-	// use structure less then 1024 B and it will be allocated on the stack
+	// ------------------------ malloca array --------------------------------
+
+	// if total size less then 1024 Bytes, it will be allocated on the stack else on heap
 	template <typename T>
 	struct sarray
 	{
-		T* data;
-		size_t size;
+		T* data = NULL;
+		size_t capacity = 0;
+		size_t size = 0;
 
-		sarray(size_t size, const T& value = T{}) : size(size)
+
+		sarray(size_t capacity) : capacity(capacity)
+		{
+			data = (T*)_malloca(sizeof(T) * capacity);
+		}
+
+		sarray(size_t size, const T& value) : size(size)
 		{
 			data = (T*)_malloca(sizeof(T) * size);
 			for (size_t i = 0; i < size; i++)
 				new(data + i) T(value);
 		}
+
+		sarray(const std::initializer_list<T>& args)
+		{
+			int i = 0;
+			size = args.size();
+			for (size_t i = 0; i < args.size(); i++)
+				push_back(*(args.begin() + i));
+		}
+
+		// Copy
+		sarray(const sarray<T>& other)
+		{
+			capacity = other.capacity;
+			data = (T*)_malloca(sizeof(T) * capacity);
+
+			for (int i = 0; i < other.size; i++)
+				push_back(other.data[i]);
+		}
+
+		sarray& operator= (const sarray<T>& other)
+		{
+			assert(capacity >= other.size);
+
+			for (int i = 0; i < size; i++)
+				data[i].~T();
+
+			size = 0;
+			for (int i = 0; i < other.size; i++)
+				push_back(other.data[i]);
+
+			return *this;
+		}
+
+		// Move
+		sarray(sarray<T>&& other)
+		{
+			capacity = other.capacity;
+			size = other.size;
+			other.size = 0;
+
+			data = (T*)_malloca(sizeof(T) * capacity);
+			memmove(data, other.data, sizeof(T) * size);
+		}
+
+		sarray& operator= (sarray<T>&& other)
+		{
+			assert(capacity >= other.size);
+
+			for (int i = 0; i < size; i++)
+				data[i].~T();
+
+			size = other.size;
+			other.size = 0;
+
+			memmove(data, other.data, sizeof(T) * size);
+			return *this;
+		}
+
+
+		T& operator [] (int idx)
+		{
+			assert((unsigned)idx < size);
+			return data[idx];
+		}
+
+		const T& operator [] (int idx) const
+		{
+			assert((unsigned)idx < size);
+			return data[idx];
+		}
+
+		void push_back(const T& value)
+		{
+			assert(size < capacity);
+			new(data + size++) T(value);
+		}
+
+		void remove(int i)
+		{
+			assert((unsigned)i < size);
+			using std::swap;
+			swap(data[i], data[--size]);
+			data[size].~T();
+		}
+
+		void erase(int i)
+		{
+			assert((unsigned)i < size);
+			data[i].~T();
+			memmove(data + i, data + i + 1, sizeof(T) * (size - i));
+			size--;
+		}
+
+		T& pop()
+		{
+			return data[--size];
+		}
+
+		T& front() { return data[0]; }
+		T& back() { return data[size - 1]; }
+		T* begin() { return data; }
+		T* end() { return data + size; }
 
 		~sarray()
 		{
@@ -142,7 +266,7 @@ namespace small
 	};
 
 
-	// heap allocated array -----------
+	// ------------------------ heap allocated array --------------------------
 	template <typename T>
 	struct vector
 	{
@@ -308,7 +432,7 @@ namespace small
 	};
 
 
-	// ============ queue =============
+	// ======================= queue ==========================
 
 	template <typename T, size_t capacity>
 	struct queue
@@ -320,13 +444,11 @@ namespace small
 
 		queue() = default;
 
-		void push(const T& val)
+		bool push(const T& val)
 		{
 			if (size == capacity)
-			{
-				printf("queue is full");
-				return;
-			}
+				return false;
+			
 			if (head >= data + capacity)
 				head = data;
 
@@ -338,7 +460,6 @@ namespace small
 		{
 			if (size < 1)
 			{
-				printf("queue is empty");
 				return T{};
 			}
 			if (tail >= data + capacity)
@@ -351,7 +472,7 @@ namespace small
 	};
 
 
-	// ========== Hash tables ==============
+	// ========================== Hash tables ================================
 
 	static const unsigned int crc32_table[] =
 	{
@@ -469,6 +590,11 @@ namespace small
 		unsigned int operator() (const std::string& str) { return xcrc32((unsigned char*)str.data(), str.size(), 0); }
 	};
 
+	template<> struct hash<std::wstring> {
+		unsigned int operator() (const std::wstring& str) { return xcrc32((unsigned char*)str.data(), str.size() * sizeof(wchar_t), 0); }
+	};
+
+
 	template <typename T>
 	struct  equal
 	{
@@ -476,9 +602,8 @@ namespace small
 	};
 
 
-	/*
-		hash map whit buckets
-	*/
+	// ---------------------- hash map with buckets -------------------------
+
 	template <typename Key, typename Val, 
 		size_t buckets = 8,
 		typename Hash = hash<Key>,
@@ -545,7 +670,8 @@ namespace small
 }
 
 
-// ============ random number generator ===============
+
+// =================== random number generator ========================
 
 static std::random_device rd;
 static std::mt19937 gen(rd());
@@ -564,7 +690,8 @@ static int rng(int from = 0, int to = INT_MAX)
 
 
 
-// ============ timer =================
+// ===================== timer =========================
+
 using namespace std::chrono;
 
 struct timer

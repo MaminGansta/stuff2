@@ -37,7 +37,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE no, LPSTR args, int cmdShow)
 	
 	// allocate image buffer on gpu
 	//cl::Buffer image(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, sizeof(Color) * window->canvas.capacity, NULL, &error);
-	cl::Image2D image(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY, cl::ImageFormat(CL_BGRA, CL_UNSIGNED_INT8), 1920, 1080, 0, nullptr, &error);
+	cl::Image2D image(context, CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, cl::ImageFormat(CL_BGRA, CL_UNSIGNED_INT8), 1920, 1080, 0, nullptr, &error);
 
 	
 	// Create command queue
@@ -72,12 +72,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE no, LPSTR args, int cmdShow)
 											cl::NDRange(256, 1));
 
 		//error = queue.enqueueReadBuffer(image, GL_TRUE, 0, sizeof(Color) * window->canvas.whole_size, window->canvas.data);
-		error = queue.enqueueReadImage(image, true,
-									   { 0, 0, 0 },
-									   { (uint32_t)window->canvas.width , (uint32_t)window->canvas.height, 1 },
-									   window->canvas.width * sizeof(Color),
-									   0,
-									   window->canvas.data);
+		//error = queue.enqueueReadImage(image, true,
+		//							   { 0, 0, 0 },
+		//							   { (uint32_t)window->canvas.width , (uint32_t)window->canvas.height, 1 },
+		//							   window->canvas.width * sizeof(Color),
+		//							   0,
+		//							   window->canvas.data);
 
 		//draw_filled_rect_async(window->canvas, 0, 0, 1.0f, 1.0f, Color(255, 0, 0));
 
