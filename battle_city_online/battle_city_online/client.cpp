@@ -324,6 +324,7 @@ bool ProccesPacket(Packet packettype, Client& client)
 		client.loaded_map = parse_map((wchar_t*)map);
 
 		free(map);
+
 		// Send message to the widnow to update the map
 		client.log += L"map was loaded\r\n";
 		output("map was loaded\n");
