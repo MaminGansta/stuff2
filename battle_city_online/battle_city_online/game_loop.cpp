@@ -240,8 +240,8 @@ void game_loop(Battle_city_window* window)
 			// Detect if bullet hit enemy tank
 			for (int i = 0; i < nEnemies; i++)
 			{
-				if (box_collison_detection(vec2{ p.bullet.pos_x, p.bullet.pos_y }, tank->size,
-					vec2{ enemies[i].pos_x, enemies[i].pos_y }, bullet.size))
+				if (box_collison_detection(vec2{ p.bullet.pos_x, p.bullet.pos_y }, bullet.size,
+					vec2{ enemies[i].pos_x, enemies[i].pos_y }, tank->size))
 				{
 					if (enemies[i].alive)
 					{
