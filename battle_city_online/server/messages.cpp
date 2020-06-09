@@ -104,8 +104,6 @@ void sendStart()
 	int init_pos_ind = (rand() % 8) & 0x11110;
 	Packet packet;
 
-	printf("init pos ind  %d \n", init_pos_ind);
-
 	// send init position
 	for (int i = 0; i < nConnections; i++)
 	{

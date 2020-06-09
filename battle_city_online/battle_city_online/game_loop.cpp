@@ -172,7 +172,7 @@ void game_loop(Battle_city_window* window)
 				}
 			}
 
-			// player
+			// player set new position
 			if (!collided &&
 				new_x - tank[0].size * 0.5f > 0.0f && new_y - tank[0].size * 0.5f > 0.0f &&
 				new_x + tank[0].size * 0.5f < 1.0f && new_y + tank[0].size * 0.5f < 1.0f)
@@ -226,8 +226,8 @@ void game_loop(Battle_city_window* window)
 			// Detect if bullet hit tank
 			for (int i = 0; i < nEnemies; i++)
 			{
-				if (box_collison_detection(vec2{ p.pos_x, p.pos_y }, tank->size,
-					vec2{ enemies[i].bullet.pos_x, enemies[i].bullet.pos_y }, bullet.size))
+				if (box_collison_detection(vec2{ p.pos_x - tank->size/2, p.pos_y - tank->size/2}, tank->size,
+					vec2{ enemies[i].bullet.pos_x - bullet.size/2, enemies[i].bullet.pos_y - bullet.size/2}, bullet.size))
 				{
 					if (p.alive)
 					{
@@ -240,8 +240,8 @@ void game_loop(Battle_city_window* window)
 			// Detect if bullet hit enemy tank
 			for (int i = 0; i < nEnemies; i++)
 			{
-				if (box_collison_detection(vec2{ p.bullet.pos_x, p.bullet.pos_y }, bullet.size,
-					vec2{ enemies[i].pos_x, enemies[i].pos_y }, tank->size))
+				if (box_collison_detection(vec2{ p.bullet.pos_x - bullet.size/2, p.bullet.pos_y - bullet.size/2}, bullet.size,
+					vec2{ enemies[i].pos_x - tank->size/2, enemies[i].pos_y - tank->size/2 }, tank->size))
 				{
 					if (enemies[i].alive)
 					{
@@ -258,8 +258,8 @@ void game_loop(Battle_city_window* window)
 				{
 					if (i == j) continue;
 
-					if (box_collison_detection(vec2{ enemies[i].pos_x, enemies[i].pos_y }, tank->size,
-						vec2{ enemies[j].bullet.pos_x, enemies[j].bullet.pos_y }, bullet.size))
+					if (box_collison_detection(vec2{ enemies[i].pos_x - tank->size/2, enemies[i].pos_y - tank->size/2 }, tank->size,
+						vec2{ enemies[j].bullet.pos_x - bullet.size/2, enemies[j].bullet.pos_y - -bullet.size/2 }, bullet.size))
 					{
 						if (enemies[i].alive)
 							explosions.push_back(Explosion{ enemies[i].pos_x, enemies[i].pos_y, 3 });
