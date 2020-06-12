@@ -104,3 +104,43 @@ void circleBres(Canvas& canvas, int xc, int yc, int r)
 		drawCircle(canvas, xc, yc, x, y);
 	}
 }
+
+
+
+// global buffer
+vec2* __bezier_buffer = NULL;
+int __bezier_capacity = 0;
+
+
+vec2 getBezierPoint(const std::vector<vec2>& points, float t)
+{
+	// reallocate buffer if neccessary
+	if (__bezier_capacity < points.size())
+	{
+		delete[] __bezier_buffer;
+		__bezier_capacity = points.size();
+		__bezier_buffer = new vec2[__bezier_capacity];
+	}
+
+	vec2* tmp = __bezier_buffer;
+	memmove(tmp, points.data(), points.size() * sizeof(vec2));
+
+	for (int i = points.size() - 1; i > 0; i--)
+		for (int k = 0; k < i; k++)
+			tmp[k] = tmp[k] + t * (tmp[k + 1] - tmp[k]);
+
+	return tmp[0];
+}
+
+
+void drawBezier(Canvas& surface, const std::vector<vec2>& points)
+{
+	vec2 priv = getBezierPoint(points, 0);
+	for (float i = 0; i < 1; i += 0.05f)
+	{
+		vec2 point = getBezierPoint(points, i);
+		drawLine(surface, priv.x * surface.width, priv.y * surface.height,
+			point.x * surface.width, point.y * surface.height, Color(255));
+		priv = point;
+	}
+}

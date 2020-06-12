@@ -1,7 +1,7 @@
 #include "guiAlexandrov/include.h"
 
-#include "draw.cpp"
 #include "figure.cpp"
+#include "draw.cpp"
 
 
 
@@ -21,6 +21,11 @@ void draw_figure(Canvas& surface, const Figure& figure)
 	if (figure.type == FigureType::circle)
 		circleBres(surface, figure.x0 * surface.width, figure.y0 * surface.height,
 			sqrtf(pow((figure.x1 - figure.x0),2) + pow((figure.y1 - figure.y0), 2)) * surface.height);
+
+	// bezier
+	if (figure.type == FigureType::bezier)
+		drawBezier(surface, figure.bezier);
+
 }
 
 
@@ -35,7 +40,7 @@ struct My_window : Window
     RadioButton DDA;
     RadioButton Bresenham;
 	RadioButton Circle;
-
+	RadioButton Bezier;
 
 	My_window()
 	{
@@ -46,9 +51,23 @@ struct My_window : Window
 
 				switch (msg)
 				{
+					case WM_RBUTTONDOWN:
+					{
+						if (window->active_figure.type == FigureType::bezier)
+						{
+							window->figures.push_back(window->active_figure);
+							window->active_figure.type = FigureType::none;
+							window->active_figure.bezier.clear();
+
+							for (auto& component : components[window->hwnd])
+								component.show();
+						}
+					}break;
+
                     case WM_LBUTTONDOWN:
                     {
-						if (window->active_figure.type != FigureType::none)
+						if (window->active_figure.type != FigureType::none &&
+							window->active_figure.type != FigureType::bezier)
 						{
 							window->figures.push_back(window->active_figure);
 							window->active_figure.type = FigureType::none;
@@ -59,7 +78,7 @@ struct My_window : Window
 							break;
 						}
 
-
+						// Define figure type
 						if (window->Bresenham.chosed())
 								window->active_figure.type = FigureType::line_bresenham;
 
@@ -69,7 +88,15 @@ struct My_window : Window
 						if (window->Circle.chosed())
 							window->active_figure.type = FigureType::circle;
 
+						if (window->Bezier.chosed())
+							window->active_figure.type = FigureType::bezier;
 
+
+						// Bezier handler
+						if (window->active_figure.type == FigureType::bezier)
+								window->active_figure.bezier.push_back(vec2(Mouse::pos_x, Mouse::pos_y));
+
+						// default handler
 						if (window->active_figure.type != FigureType::none)
 						{
 							window->active_figure.x0 = Mouse::pos_x;
@@ -87,6 +114,9 @@ struct My_window : Window
                         if (window->active_figure.type == FigureType::none)
 							break;
                         
+						if (window->active_figure.type == FigureType::bezier)
+							window->active_figure.bezier.back() = vec2(Mouse::pos_x, Mouse::pos_y);
+
 						window->active_figure.x1 = Mouse::pos_x;
                         window->active_figure.y1 = Mouse::pos_y;
 					
@@ -101,8 +131,10 @@ struct My_window : Window
                         for (int i = 0; i < window->figures.size(); i++)
                             draw_figure(window->canvas, window->figures[i]);
 
-                        if (window->active_figure.type != FigureType::none)
-                            draw_figure(window->canvas, window->active_figure);
+						
+						if (window->active_figure.type != FigureType::none)
+							draw_figure(window->canvas, window->active_figure);
+
 
                         window->render_canvas();
                         EndPaint(hwnd, &ps);
@@ -121,6 +153,9 @@ struct My_window : Window
 		Circle.init(hwnd, L"Circle", 0.399f, 0.9f, 0.15f, 0.1f);
 		set_font_size(Circle.hwnd, 25);
         
+		Bezier.init(hwnd, L"Bezier", 0.548f, 0.9f, 0.15f, 0.1f);
+		set_font_size(Bezier.hwnd, 25);
+
 		active_figure.type = FigureType::none;
 	}
 
