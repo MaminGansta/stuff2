@@ -436,6 +436,8 @@ struct Window
 		BitBlt(this->hdc, rect.left, rect.top, width, height, memDC, rect.left, rect.top, SRCCOPY);
 
 		SelectObject(memDC, oldBMP);
+
+		DeleteObject(hBmp);
 		DeleteDC(memDC);
 		ReleaseDC(NULL, hdc);
 	}
@@ -452,6 +454,8 @@ struct Window
 		BitBlt(this->hdc, 0, 0, canvas.width, canvas.height, memDC, 0, 0, SRCCOPY);
 
 		SelectObject(memDC, oldBMP);
+
+		DeleteObject(hBmp);
 		DeleteDC(memDC);
 		ReleaseDC(NULL, hdc);
 	}
