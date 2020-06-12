@@ -1,111 +1,40 @@
-#define MAX_THREADS 8
 #include "guiAlexandrov/include.h"
 
-#define roundf(x) floor(x + 0.5f)
+#include "draw.cpp"
+#include "figure.cpp"
 
-void line_DDA(Canvas& surface, float x1, float y1, float x2, float y2)
+
+
+void draw_figure(Canvas& surface, const Figure& figure)
 {
-    // (1) ÷елочисленные значени€ координат начала и конца отрезка,
-    // округленные до ближайшего целого
-    int iX1 = roundf(x1);
-    int iY1 = roundf(y1);
-    int iX2 = roundf(x2);
-    int iY2 = roundf(y2);
+	// dda
+	if (figure.type == FigureType::line_dda)
+		line_DDA(surface, surface.width * figure.x0, surface.height * figure.y0,
+			surface.width * figure.x1, surface.height * figure.y1);
 
-    // (2) ƒлина и высота линии
-    int deltaX = abs(iX1 - iX2);
-    int deltaY = abs(iY1 - iY2);
+	// brasenham
+	if (figure.type == FigureType::line_bresenham)
+		line_Bresenham(surface, surface.height * figure.y0, surface.width * figure.x0,
+			surface.height * figure.y1, surface.width * figure.x1);
 
-    // (3) —читаем минимальное количество итераций, необходимое
-    // дл€ отрисовки отрезка. ¬ыбира€ максимум из длины и высоты
-    // линии, обеспечиваем св€зность линии
-    int length = max(deltaX, deltaY);
-    // особый случай, на экране закрашиваетс€ ровно один пиксел
-    if (length == 0)
-    {
-        drawPixel(surface, iX1, iY1, Color(255));
-        return;
-    }
-
-    // (4) ¬ычисл€ем приращени€ на каждом шаге по ос€м абсцисс и ординат
-    double dX = (x2 - x1) / length;
-    double dY = (y2 - y1) / length;
-
-    // (5) Ќачальные значени€
-    double x = x1;
-    double y = y1;
-
-    // ќсновной цикл
-    length++;
-    while (length--)
-    {
-        x += dX;
-        y += dY;
-        drawPixel(surface, roundf(x), roundf(y), Color(255));
-    }
-}
-
-void line_Bresenham(Canvas& surface, int x0, int y0, int x1, int y1) {
-        bool steep = false;
-        if (std::abs(x0 - x1) < std::abs(y0 - y1)) {
-            std::swap(x0, y0);
-            std::swap(x1, y1);
-            steep = true;
-        }
-        if (x0 > x1) {
-            std::swap(x0, x1);
-            std::swap(y0, y1);
-        }
-        int dx = x1 - x0;
-        int dy = y1 - y0;
-        float derror = std::abs(dy / float(dx));
-        float error = 0;
-        int y = y0;
-        for (int x = x0; x <= x1; x++) {
-            if (steep) {
-                drawPixel(surface, x, y, Color(255));
-
-            }
-            else {
-                drawPixel(surface, y, x, Color(255));
-            }
-            error += derror;
-            if (error > .5) {
-                y += (y1 > y0 ? 1 : -1);
-                error -= 1.;
-            }
-        }
-    }
-
-
-struct Line
-{
-	float x0 = 0, y0 = 0, x1 = 0, y1 = 0;
-    int type = 0;
-};
-
-
-void draw_lesson_line(Canvas& surface, Line& line)
-{
-
-    if (line.type == 0)
-        line_DDA(surface, surface.width * line.x0, surface.height * line.y0,
-                          surface.width * line.x1, surface.height * line.y1);
-    else
-        line_Bresenham(surface,  surface.height * line.y0, surface.width * line.x0,
-                                surface.height * line.y1, surface.width * line.x1);
+	// circle
+	if (figure.type == FigureType::circle)
+		circleBres(surface, figure.x0 * surface.width, figure.y0 * surface.height,
+			sqrtf(pow((figure.x1 - figure.x0),2) + pow((figure.y1 - figure.y0), 2)) * surface.height);
 }
 
 
-template <typename Image_type>
+
+
 struct My_window : Window
 {
-	Line show_line;
+	Figure active_figure;
 
-	std::vector<Line> lines;
+	std::vector<Figure> figures;
 
     RadioButton DDA;
     RadioButton Bresenham;
+	RadioButton Circle;
 
 
 	My_window()
@@ -119,39 +48,61 @@ struct My_window : Window
 				{
                     case WM_LBUTTONDOWN:
                     {
-                        if (window->show_line.x0 == -1)
-                        {
-                            window->show_line.type = window->Bresenham.chosed();
-                            window->show_line.x0 = Mouse::pos_x;
-                            window->show_line.y0 = Mouse::pos_y;
-                            window->Bresenham.hide();
-                            window->DDA.hide();
-                        }
-                        else
-                        {
-                            window->lines.push_back(window->show_line);
-                            window->show_line.x0 = -1;
-                            window->Bresenham.show();
-                            window->DDA.show();
-                        }
+						if (window->active_figure.type != FigureType::none)
+						{
+							window->figures.push_back(window->active_figure);
+							window->active_figure.type = FigureType::none;
+
+							for (auto& component : components[window->hwnd])
+								component.show();
+							
+							break;
+						}
+
+
+						if (window->Bresenham.chosed())
+								window->active_figure.type = FigureType::line_bresenham;
+
+						if (window->DDA.chosed())
+							window->active_figure.type = FigureType::line_dda;
+
+						if (window->Circle.chosed())
+							window->active_figure.type = FigureType::circle;
+
+
+						if (window->active_figure.type != FigureType::none)
+						{
+							window->active_figure.x0 = Mouse::pos_x;
+							window->active_figure.y0 = Mouse::pos_y;
+
+							window->active_figure.x1 = Mouse::pos_x;
+							window->active_figure.y1 = Mouse::pos_y;
+
+							for (auto& component : components[window->hwnd])
+								component.hide();
+						}
                     }break;
+
                     case WM_MOUSEMOVE:
-                        if (window->show_line.x0 == -1) break;
-                        window->show_line.x1 = Mouse::pos_x;
-                        window->show_line.y1 = Mouse::pos_y;
+                        if (window->active_figure.type == FigureType::none)
+							break;
+                        
+						window->active_figure.x1 = Mouse::pos_x;
+                        window->active_figure.y1 = Mouse::pos_y;
 					
                     case WM_PAINT:
                     {
                         PAINTSTRUCT ps;
                         BeginPaint(hwnd, &ps);
+
                         // clear screen
-                        draw_filled_rect(window->canvas, 0.0f, 0.0f, 1.0f, 1.0f, Color(0));
+                        draw_filled_rect_async(window->canvas, 0.0f, 0.0f, 1.0f, 1.0f, Color(0));
 
-                        for (int i = 0; i < window->lines.size(); i++)
-                            draw_lesson_line(window->canvas, window->lines[i]);
+                        for (int i = 0; i < window->figures.size(); i++)
+                            draw_figure(window->canvas, window->figures[i]);
 
-                        if (window->show_line.x0 != -1)
-                            draw_lesson_line(window->canvas, window->show_line);
+                        if (window->active_figure.type != FigureType::none)
+                            draw_figure(window->canvas, window->active_figure);
 
                         window->render_canvas();
                         EndPaint(hwnd, &ps);
@@ -164,13 +115,17 @@ struct My_window : Window
         DDA.init(hwnd, L"DDA", 0.05f, 0.9f, 0.15f, 0.1f);
         set_font_size(DDA.hwnd, 25);
 
-        Bresenham.init(hwnd, L"Bresenham", 0.2f, 0.9f, 0.15f, 0.1f);
+        Bresenham.init(hwnd, L"Bresenham", 0.2f, 0.9f, 0.2f, 0.1f);
         set_font_size(Bresenham.hwnd, 25);
 
-        show_line.x0 = -1;
+		Circle.init(hwnd, L"Circle", 0.399f, 0.9f, 0.15f, 0.1f);
+		set_font_size(Circle.hwnd, 25);
+        
+		active_figure.type = FigureType::none;
 	}
 
 };
+
 
 
 
@@ -178,7 +133,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	al_init(hInstance);
 
-	My_window<Image>* window = new My_window<Image>();
+	new My_window();
 
 	Window::wait_msg_proc();
 	return 0;
