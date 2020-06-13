@@ -465,6 +465,8 @@ struct Window
 		BitBlt(ps.hdc, rect.left, rect.top, width, height, memDC, rect.left, rect.top, SRCCOPY);
 		
 		SelectObject(memDC, oldBMP);
+
+		DeleteObject(hBmp);
 		DeleteDC(memDC);
 		ReleaseDC(NULL, hdc);
 	}
