@@ -13,14 +13,25 @@ void draw_figure(Canvas& surface, const Figure& figure)
 			surface.width * figure.x1, surface.height * figure.y1);
 
 	// brasenham
+	//if (figure.type == FigureType::line_bresenham)
+	//	line_Bresenham(surface, surface.height * figure.y0, surface.width * figure.x0,
+	//		surface.height * figure.y1, surface.width * figure.x1);
+
 	if (figure.type == FigureType::line_bresenham)
-		line_Bresenham(surface, surface.height * figure.y0, surface.width * figure.x0,
-			surface.height * figure.y1, surface.width * figure.x1);
+		line_Bresenham(surface, surface.width * figure.x0, surface.height * figure.y0,
+			surface.width * figure.x1, surface.height * figure.y1);
+
 
 	// circle
+	//if (figure.type == FigureType::circle)
+	//	circleBres(surface, figure.x0 * surface.width, figure.y0 * surface.height,
+	//		sqrtf(pow((figure.x1 - figure.x0),2) + pow((figure.y1 - figure.y0), 2)) * surface.height);
+
 	if (figure.type == FigureType::circle)
-		circleBres(surface, figure.x0 * surface.width, figure.y0 * surface.height,
-			sqrtf(pow((figure.x1 - figure.x0),2) + pow((figure.y1 - figure.y0), 2)) * surface.height);
+		BresenhamCircle(surface, figure.x0 * surface.width, figure.y0 * surface.height,
+			sqrtf(pow((figure.x1 - figure.x0), 2) + pow((figure.y1 - figure.y0), 2)) * surface.height, Color(255));
+
+
 
 	// bezier
 	if (figure.type == FigureType::bezier)
