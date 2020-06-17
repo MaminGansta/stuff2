@@ -88,7 +88,7 @@ void ThreadPool::resize(int new_size)
 					assert(active_tasks >= 0);
 
 					if (active_tasks == 0)
-						cv_wait.notify_one();
+						cv_wait.notify_all();
 				}
 			})
 		);
