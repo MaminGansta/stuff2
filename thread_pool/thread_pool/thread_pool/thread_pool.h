@@ -7,6 +7,8 @@
 #include <queue>
 #include <future>
 #include <atomic>
+#include <cassert>
+
 
 struct ThreadPool
 {
@@ -16,6 +18,12 @@ struct ThreadPool
 	std::condition_variable event;
 	std::mutex event_mutex;
 	std::atomic<bool> stopping;
+
+	// task counter
+	std::atomic<int> active_tasks = 0;
+
+	std::mutex mutex_wait;
+	std::condition_variable cv_wait;
 
 
 	ThreadPool();
@@ -27,6 +35,9 @@ struct ThreadPool
 	template <typename F, typename ...Args>
 	auto add_task(F&& task, Args&& ...args) ->std::future<decltype(task(args...))>
 	{
+		// increment active tasts
+		active_tasks++;
+
 		auto wrapper = std::make_shared<std::packaged_task<decltype(task(args...))()>>(
 			std::bind(std::forward<F>(task), std::forward<Args>(args)...));
 		
@@ -72,24 +83,23 @@ struct ThreadPool
 	*/
 	std::future<void> add_task_void(std::function<void()> task);
 
+
 	/*
 		No dynamic allocation, in this version
 		no code generation
 	*/
 	void parallel_for_void(int from_param, int to_param, std::function<void(int, int)> func);
 
-	// wait for parallel_for_void
-	// tasks will be finished
+
+	// wait until all tasks will be finished
 	void wait();
+
 
 	void resize(int size);
 
 	int size();
 
-private:
-	// neccessary to avoid allocations in parallel_for
-	std::vector<std::future<void>> result;
-
+	
 	void start(int size);
 
 	void stop() noexcept;

@@ -8,7 +8,6 @@ ThreadPool::ThreadPool()
 {
 	int size = std::thread::hardware_concurrency();
 	stopping = false;
-	result.reserve(size);
 	start(size);
 }
 
@@ -17,7 +16,6 @@ ThreadPool::ThreadPool(size_t threads)
 {
 	int size = threads;
 	stopping = false;
-	result.reserve(size);
 	start(size);
 }
 
@@ -32,26 +30,7 @@ ThreadPool::~ThreadPool()
 
 void ThreadPool::start(int size)
 {
-	for (int i = 0; i < size; i++)
-	{
-		pool.push_back(std::thread([&]()
-			{
-				std::function<void()> task;
-				while (true)
-				{
-					{
-						std::unique_lock<std::mutex> lock(event_mutex);
-
-						event.wait(lock, [&]() { return stopping || !tasks.empty(); });
-						if (stopping && tasks.empty()) break;
-
-						task = std::move(tasks.front());
-						tasks.pop();
-					}
-					task();
-				}
-			}));
-	}
+	resize(size);
 }
 
 
@@ -70,19 +49,17 @@ void ThreadPool::stop() noexcept
 
 void ThreadPool::resize(int new_size)
 {
-	// free all if down size
+	// free all threads if down size
 	if (new_size < size())
 	{
 		stopping = true;
 		event.notify_all();
 		for (std::thread& thread : pool)
 			thread.join();
-
 		pool.clear();
 	}
 
 	int new_threads = new_size - size();
-	result.reserve(new_size);
 	stopping = false;
 
 	// create new threads
@@ -103,6 +80,15 @@ void ThreadPool::resize(int new_size)
 						tasks.pop();
 					}
 					task();
+
+					// dencrement active tasts
+					active_tasks--;
+
+					// something going wrong
+					assert(active_tasks >= 0);
+
+					if (active_tasks == 0)
+						cv_wait.notify_one();
 				}
 			})
 		);
@@ -124,10 +110,8 @@ int ThreadPool::size()
 
 void ThreadPool::wait()
 {
-	for (int i = 0; i < result.size(); i++)
-		result[i].get();
-
-	result.clear();
+	std::unique_lock<std::mutex> lock(mutex_wait);
+	cv_wait.wait(lock, [&]() { return active_tasks == 0; });
 }
 
 
@@ -135,6 +119,9 @@ void ThreadPool::wait()
 
 std::future<void> ThreadPool::add_task_void(std::function<void()> task)
 {
+	// increment task counter
+	active_tasks++;
+
 	auto wrapper = std::make_shared<std::packaged_task<void()>>(std::move(task));
 	{
 		std::unique_lock<std::mutex> lock(event_mutex);
@@ -145,15 +132,10 @@ std::future<void> ThreadPool::add_task_void(std::function<void()> task)
 }
 
 
-
-
-//  =============== parallel for void =========================
+//  =============== void parallel for =========================
 
 void ThreadPool::parallel_for_void(int from_param, int to_param, std::function<void(int, int)> func)
 {
-	if (result.size() > 64)
-		result.clear();
-
 	// split whole task to pieces
 	int width = to_param - from_param;
 	int threads = __min(width, size());
@@ -163,7 +145,6 @@ void ThreadPool::parallel_for_void(int from_param, int to_param, std::function<v
 	{
 		int from = i * width / threads + from_param;
 		int to = (i + 1) * width / threads + from_param;
-
-		result.push_back(add_task(func, from, to));
+		add_task(func, from, to);
 	}
 }
