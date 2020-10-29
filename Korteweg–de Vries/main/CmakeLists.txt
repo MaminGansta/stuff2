@@ -1,0 +1,45 @@
+cmake_minimum_required(VERSION 3.12)
+project(HomeWork VERSION 0.0.0)
+
+
+file(GLOB_RECURSE SRCS *.cpp)
+file(GLOB_RECURSE HDRS *.h)
+
+add_executable(HomeWork ${SRCS} ${HDRS})
+
+target_link_libraries(HomeWork imgui)
+
+set_target_properties(
+    HomeWork PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+target_include_directories(
+    HomeWork PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/SDL2/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/GLEW/include
+)
+
+target_link_directories(
+    HomeWork PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/SDL2/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/GLEW/lib
+)
+
+target_link_libraries(
+    HomeWork
+    SDL2main.lib
+    SDL2.dll
+    glew32s.lib
+    opengl32.lib
+)
+
+
+# Put dll files to exe
+add_custom_command(TARGET HomeWork PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${PROJECT_SOURCE_DIR}/../dependencies/dll
+                   $<TARGET_FILE_DIR:HomeWork>)
