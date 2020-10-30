@@ -1,11 +1,10 @@
 
-#include "sdl_window/sdl_window.h"
 #include "ui/UI.h"
 
 int main(int argc, char* args[])
 {
 	Bubble::SDL_WINDOW window;
-	Bubble::UI ui{ &window };
+	Bubble::UI ui(&window);
 	Bubble::Timer timer;
 
 	while (window.IsOpen())
