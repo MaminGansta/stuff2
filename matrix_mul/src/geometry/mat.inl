@@ -46,6 +46,30 @@ namespace gm
 	}
 
 	template <typename T>
+	void gm::Mat<T>::SetRow(int idx, const Vec<T>& row)
+	{
+		assert(*(uint32_t*)&idx < GetRowsNum(), "Out of bound access");
+		assert(row.GetSize() == GetRowsNum(), "Out ogf bound access");
+	
+		memmove(mData.data() + GetColsNum() * idx, row.GetData(), sizeof(T) * row.GetSize());
+	}
+
+
+	template <typename T>
+	void Mat<T>::SetCol(int idx, const Vec<T>& col)
+	{
+		assert(*(uint32_t*)&idx < GetColsNum(), "Out of bound access");
+		assert(col.GetSize() == GetColsNum(), "Out of bound access");
+
+		for (int i = 0; i < GetColsNum(); i++)
+		{
+			mData[mWidth * i + idx] = col[i];
+		}
+	}
+
+
+
+	template <typename T>
 	Mat<T> gm::Mat<T>::GetIdentity(int width, int height)
 	{
 		Mat<T> mat(width, height);

@@ -24,7 +24,12 @@ namespace gm
 		const_pointer operator[] (int idx) const;
 		Vec<T> GetCol(int idx) const;
 		Vec<T> GetRow(int idx) const;
+		void SetCol(int idx, const Vec<T>& vec);
+		void SetRow(int idx, const Vec<T>& vec);
+
+
 		pointer GetData() { return mData.data(); }
+		const_pointer GetData() const { return mData.data(); }
 
 		uint32_t GetColsNum() const { return std::min(mWidth, (uint32_t)mData.size()); }
 		uint32_t GetRowsNum() const { return std::min(mHeight, (uint32_t)mData.size()); }
@@ -36,7 +41,8 @@ namespace gm
 		uint32_t mWidth;
 		uint32_t mHeight;
 	};
-	
+
 	typedef Mat<float> mat;
+
 
 }

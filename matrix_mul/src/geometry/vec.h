@@ -22,10 +22,11 @@ namespace gm
 		Vec() = default;
 		Vec(int size, const_pointer data = nullptr);
 		
-		value_type& operator[] (int idx);
+		reference operator[] (int idx);
 		const_reference operator[](int idx) const;
 		uint32_t GetSize() const { return mData.size(); }
-		pointer GetData() const { return mData.data(); }
+		pointer GetData() { return mData.data(); }
+		const_pointer GetData() const { return mData.data(); }
 
 	private:
 		std::vector<value_type> mData;
