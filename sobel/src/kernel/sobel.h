@@ -5,15 +5,25 @@
 
 
 template <typename Image_type>
-struct Sobel_y : public Kernel<Image_type, 3>
+struct Sobel_y : public Kernel<Image_type, 5>
 {
-	Sobel_y() : Kernel<Image_type, 3>({ 1, 0 , -1, 2, 0, -2, 1, 0 , -1 }) {}
+	//Sobel_y() : Kernel<Image_type, 3>({ 1, 0 , -1, 2, 0, -2, 1, 0 , -1 }) {}
+	Sobel_y() : Kernel<Image_type, 5>({ 2, 1, 0, -1, -2, 
+										2, 1, 0, -1, -2,
+										4, 2, 0, -2, -4,
+										2, 1, 0, -1, -2,
+										2, 1, 0, -1, -2 }) {}
 };
 
 template <typename Image_type>
-struct Sobel_x : public Kernel<Image_type, 3>
+struct Sobel_x : public Kernel<Image_type, 5>
 {
-	Sobel_x() : Kernel<Image_type, 3>({ 1, 2 , 1, 0, 0, 0, -1, -2 , -1 }) {}
+	//Sobel_x() : Kernel<Image_type, 3>({ 1, 2 , 1, 0, 0, 0, -1, -2 , -1 }) {}
+	Sobel_x() : Kernel<Image_type, 5>({ 2, 2, 4, 2, 2, 
+										1, 1, 2, 1, 1,
+										0, 0, 0, 0, 0
+									   -1, -1, -2, -1, -1,
+									   -2, -2, -4, -2, -2 }) {}
 };
 
 
