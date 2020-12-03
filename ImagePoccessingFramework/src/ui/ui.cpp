@@ -4,32 +4,39 @@
 
 namespace Bubble
 {
+	std::vector<Module*> UI::sModules;
+
+	void UI::AddModule(Module* module)
+	{
+		sModules.push_back(module);
+	}
+
 	UI::UI(Window* window)
 		: mImGuiControll(window)
 	{
 		mImGuiControll.OnAttach();
 
-		mShader = ShaderLoader::Load("resources/shaders/shader.glsl");
-		mImage = CreateRef<Texture2D>("resources/images/nature.jpg");
-
-		float quadVertices[] = {
-			// positions        // texture Coords
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		};
-
-		VertexBuffer vb(quadVertices, 4);
-		VertexArray va;
-
-		BufferLayout layout
-		{
-			{ GLSLDataType::Float3, "Position" },
-			{ GLSLDataType::Float2, "TexCoords" }
-		};
-		vb.SetLayout(layout);
-		va.AddVertexBuffer(std::move(vb));
+		//mShader = ShaderLoader::Load("resources/shaders/shader.glsl");
+		//mImage = CreateRef<Texture2D>("resources/images/nature.jpg");
+		//
+		//float quadVertices[] = {
+		//	// positions        // texture Coords
+		//	-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+		//	-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+		//	 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+		//	 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		//};
+		//
+		//VertexBuffer vb(quadVertices, 4);
+		//VertexArray va;
+		//
+		//BufferLayout layout
+		//{
+		//	{ GLSLDataType::Float3, "Position" },
+		//	{ GLSLDataType::Float2, "TexCoords" }
+		//};
+		//vb.SetLayout(layout);
+		//va.AddVertexBuffer(std::move(vb));
 	}
 
 	UI::~UI()
@@ -37,17 +44,27 @@ namespace Bubble
 		mImGuiControll.OnDetach();
 	}
 
-	void UI::Draw(DeltaTime dt)
+	void UI::OnUpdate(DeltaTime dt)
 	{
 		mImGuiControll.Begin();
 
 		mImGuiControll.BeginMenuBar();
 		DrawMenuBar();
 		mImGuiControll.EndMenuBar();
+
+		for (auto module : sModules)
+		{
+			if (module->IsOpen())
+			{
+				module->Draw(dt);
+			}
+			else {
+				delete module;
+			}
+		}
 		
 		ImGui::Begin("Test");
-		//ImGui::Button("Button", { 100, 50 });
-		ImGui::Image((ImTextureID)mImage->mRendererID, { 500, 500 });
+		ImGui::Button("dsaf", { 100, 100 });
 		ImGui::End();
 
 		mImGuiControll.End();

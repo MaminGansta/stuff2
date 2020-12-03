@@ -39,7 +39,8 @@ namespace Bubble
 		static void ClearColor();
 
 		// ============ Rendering ============
-		static void DrawIndices(const Ref<VertexArray>& vertexArray, DrawType draw_type = DrawType::TRIANGLES, uint32_t count = 0);
+		static void DrawIndices(const Ref<VertexArray>& vertex_array, DrawType draw_type = DrawType::TRIANGLES, uint32_t count = 0);
+		static void DrawVertices(const Ref<VertexArray>& vertex_array, DrawType draw_type = DrawType::TRIANGLES, uint32_t count = 0);
 	};
 
 }

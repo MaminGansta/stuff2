@@ -124,4 +124,11 @@ namespace Bubble
 		glcall(glDrawElements(OpenGLDrawType(draw_type), count, GL_UNSIGNED_INT, nullptr));
 	}
 
+	void Renderer::DrawVertices(const Ref<VertexArray>& vertex_array, DrawType draw_type, uint32_t count)
+	{
+		vertex_array->Bind();
+		count = count ? count : vertex_array->GetVertexBuffers()[0].GetSize();
+		glcall(glDrawArrays(OpenGLDrawType(draw_type), 0, count));
+	}
+
 }

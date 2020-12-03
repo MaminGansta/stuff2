@@ -1,27 +1,25 @@
 
-#include "ui/ui.h"
-#include "core.h"
-#include "renderer.h"
+#include "entry_point.h"
 
-int main(int arc, char** argv)
+struct MyApplication : Bubble::Application
 {
-	Bubble::Window window;
-	Bubble::UI ui(&window);
-	Bubble::Input::SetWindow(&window);
-	Bubble::Timer timer;
-
-	while (window.IsOpen())
+	void OnCreate()
 	{
-		SDL_Event event;
-		while (window.PollEvent(event))
-		{
-			window.OnEvent(event);
-		}
-		ui.Draw(timer.GetDeltaTime());
-
-		timer.Update();
-		window.OnUpdate();
+		GetWindow().SetVSync(false);
 	}
 
-	return 0;
+	void OnUpdate(Bubble::DeltaTime dt)
+	{
+
+	}
+
+	void OnEvent(const SDL_Event& event)
+	{
+
+	}
+};
+
+Bubble::Application* CreateApplication()
+{
+	return (Bubble::Application*)new MyApplication;
 }

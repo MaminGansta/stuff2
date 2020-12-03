@@ -13,9 +13,8 @@ namespace Bubble
     {
 		Window* mWindow;
 
-		void ImGuiMultiViewports();
-
     public:
+        ImGuiControll() = default;
         ImGuiControll(Window* window);
 
         void OnAttach();
@@ -28,5 +27,8 @@ namespace Bubble
 		void EndMenuBar();
 
         void OnEvent(SDL_Event& event);
+
+    private:
+		void ImGuiMultiViewports();
     };
 }

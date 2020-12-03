@@ -25,9 +25,9 @@ add_definitions(-D"STB_IMAGE_IMPLEMENTATION")
 target_include_directories(
     OpenCLTest PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/uit
-    ${CMAKE_CURRENT_SOURCE_DIR}/image_proccessing/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/image_proccessing/render
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/render
     ${CMAKE_SOURCE_DIR}/dependencies/imgui
     ${CMAKE_SOURCE_DIR}/dependencies/stb_image
     ${CMAKE_SOURCE_DIR}/dependencies/SDL2/include
