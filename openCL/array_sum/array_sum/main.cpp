@@ -1,14 +1,9 @@
 
-#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
-#include "CL/cl.hpp"
-
-#include <cstdio>
+#include "opencl/opencl.h"
 #include <fstream>
-
 #include <time.h>
 
-#include "OCLerrors.cpp"
-#include "OCLprogram.cpp"
+#define VENDOR_AMD "Advanced Micro Devices, Inc."
 
 
 int main(void)

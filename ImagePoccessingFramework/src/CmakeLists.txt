@@ -1,0 +1,69 @@
+cmake_minimum_required(VERSION 3.12)
+project(OpenCLTest VERSION 0.0.0)
+
+
+file(GLOB_RECURSE SRCS *.cpp)
+file(GLOB_RECURSE HDRS *.h)
+
+add_executable(OpenCLTest ${SRCS} ${HDRS})
+
+target_link_libraries(OpenCLTest imgui)
+
+set_target_properties(
+    OpenCLTest PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+# Defines
+add_definitions(-D"GLEW_STATIC")
+add_definitions(-D"GLM_FORCE_SWIZZLE")
+add_definitions(-D"STBI_WINDOWS_UTF8")
+add_definitions(-D"STB_IMAGE_IMPLEMENTATION")
+
+# Include directories
+target_include_directories(
+    OpenCLTest PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/uit
+    ${CMAKE_CURRENT_SOURCE_DIR}/image_proccessing/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/image_proccessing/render
+    ${CMAKE_SOURCE_DIR}/dependencies/imgui
+    ${CMAKE_SOURCE_DIR}/dependencies/stb_image
+    ${CMAKE_SOURCE_DIR}/dependencies/SDL2/include
+    ${CMAKE_SOURCE_DIR}/dependencies/GLEW/include
+    ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
+    ${CMAKE_SOURCE_DIR}/dependencies/glm/include
+    ${CMAKE_SOURCE_DIR}/dependencies/opencl3/include
+)
+
+# Libraries directories
+target_link_directories(
+    OpenCLTest PUBLIC
+    ${CMAKE_SOURCE_DIR}/dependencies/SDL2/lib
+    ${CMAKE_SOURCE_DIR}/dependencies/GLEW/lib
+    ${CMAKE_SOURCE_DIR}/dependencies/opencl3/lib
+)
+
+# Libraries
+target_link_libraries(
+    OpenCLTest
+    SDL2main.lib
+    SDL2.dll
+    glew32s.lib
+    opengl32.lib
+    OpenCL.lib
+)
+
+# Resources
+add_custom_command(TARGET OpenCLTest PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${PROJECT_SOURCE_DIR}/resources
+                       $<TARGET_FILE_DIR:OpenCLTest>/resources)
+
+
+# Put dll files to exe
+add_custom_command(TARGET OpenCLTest PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${PROJECT_SOURCE_DIR}/../dependencies/dll
+                   $<TARGET_FILE_DIR:OpenCLTest>)

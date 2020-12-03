@@ -18,15 +18,20 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OCLprogram.cpp">
+    <ClCompile Include="opencl\OCLprogram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OCLerrors.cpp">
+    <ClCompile Include="opencl\OCLerrors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="proccess_array.cl" />
     <None Include="array_sum.cl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="opencl\opencl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

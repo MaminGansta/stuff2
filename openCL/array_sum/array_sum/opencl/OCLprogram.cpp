@@ -1,6 +1,4 @@
 
-#define VENDOR_AMD "Advanced Micro Devices, Inc."
-
 
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #include "CL/cl.hpp"
@@ -44,7 +42,7 @@ std::tuple<cl::Program, cl::Context, cl::Device, cl_int> CreateProgram(const std
 	// make source string 
 	std::string src(std::istreambuf_iterator<char>(ProgramFile), (std::istreambuf_iterator<char>()));
 	
-	cl::Program::Sources sources{ std::make_pair<char*, int>(src.data(), src.size()) };
+	cl::Program::Sources sources(1, std::make_pair(src.c_str(), src.length() + 1));
 
 
 	cl::Context context(device);
@@ -59,9 +57,7 @@ std::tuple<cl::Program, cl::Context, cl::Device, cl_int> CreateProgram(const std
 		// Get the build log
 		std::string name = device.getInfo<CL_DEVICE_NAME>();
 		std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
-
-		output(name.c_str()); 
-		output(buildlog.c_str());
+		printf("Build log for %s :\n %s", name.c_str(), buildlog.c_str());
 	}
 
 	return { program, context, device, error };
