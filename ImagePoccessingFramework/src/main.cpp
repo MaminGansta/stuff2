@@ -1,5 +1,5 @@
 
-#include "entry_point.h"
+#include "bubble.h"
 
 struct MyApplication : Bubble::Application
 {
@@ -21,5 +21,5 @@ struct MyApplication : Bubble::Application
 
 Bubble::Application* CreateApplication()
 {
-	return (Bubble::Application*)new MyApplication;
+	return new MyApplication;
 }
