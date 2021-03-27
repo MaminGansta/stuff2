@@ -1,0 +1,50 @@
+cmake_minimum_required(VERSION 3.12)
+project(GraduateWork VERSION 0.0.0)
+
+
+file(GLOB_RECURSE SRCS *.cpp)
+file(GLOB_RECURSE HDRS *.h)
+file(GLOB_RECURSE TSRCS *.inl)
+
+add_executable(GraduateWork ${SRCS} ${HDRS} ${TSRCS})
+
+
+set_target_properties(
+    GraduateWork PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+)
+
+# Gpu proccessing framework
+target_link_libraries(GraduateWork Framework)
+target_link_libraries(GraduateWork nativefiledialog)
+add_dll(GraduateWork)
+
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+target_include_directories(
+    GraduateWork PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tools
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/geometry
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui_toolkit
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_processing
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_processing/cpu
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_processing/gpu
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_processing/convolution
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/image_processing/data_structures
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/genetic_algorithm
+
+)
+
+# Resources
+add_custom_command(TARGET GraduateWork PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${PROJECT_SOURCE_DIR}/resources
+                   $<TARGET_FILE_DIR:GraduateWork>/resources)
